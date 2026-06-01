@@ -19,7 +19,7 @@ import { PRIMARY_USE_LABELS } from "@/lib/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const WHO_BENEFITED = [
+const WHO_HELPED = [
   "Executive / leadership team",
   "My team",
   "Customer / client",
@@ -30,16 +30,17 @@ const WHO_BENEFITED = [
 ];
 
 const CONTRIBUTION_TYPES = [
-  "Administrative support",
+  "Operational support",
   "Leadership support",
   "Project coordination",
   "Communication",
   "Relationship management",
   "Process improvement",
+  // --- show more below this line (defaultVisible = 6) ---
   "Event / meeting execution",
   "Strategic support",
   "Problem solving",
-  "Customer support",
+  "Stakeholder support",
   "Operations",
   "Change management",
 ];
@@ -47,16 +48,17 @@ const CONTRIBUTION_TYPES = [
 const IMPACT_TYPES = [
   "Time savings",
   "Cost savings",
+  "Process improvement",
+  "Operational efficiency",
+  "Leadership enablement",
+  "Strategic alignment",
+  "Project execution",
+  // --- show more below this line (defaultVisible = 7) ---
   "Revenue / profitability support",
   "Risk reduction",
   "Customer experience",
   "Employee experience",
-  "Process improvement",
-  "Operational efficiency",
-  "Leadership enablement",
   "Culture / engagement",
-  "Project execution",
-  "Strategic alignment",
   "Communication effectiveness",
   "Relationship management",
 ];
@@ -106,11 +108,14 @@ function ChipGroup({
   options,
   selected,
   onChange,
+  defaultVisible,
 }: {
   options: string[];
   selected: string[];
   onChange: (values: string[]) => void;
+  defaultVisible?: number;
 }) {
+  const [showAll, setShowAll] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
 
@@ -129,11 +134,18 @@ function ChipGroup({
     setShowCustom(false);
   }
 
+  const shouldCollapse = !!defaultVisible && !showAll && options.length > defaultVisible;
+  const primaryOptions = shouldCollapse ? options.slice(0, defaultVisible) : options;
+  // Surface selected chips from the hidden range so users can always see/deselect
+  const hiddenOptions = shouldCollapse ? options.slice(defaultVisible) : [];
+  const selectedFromHidden = hiddenOptions.filter((o) => selected.includes(o));
+  const unselectedHiddenCount = hiddenOptions.filter((o) => !selected.includes(o)).length;
+  const displayedOptions = [...primaryOptions, ...selectedFromHidden];
   const customSelected = selected.filter((s) => !options.includes(s));
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {options.map((opt) => {
+      {displayedOptions.map((opt) => {
         const isSelected = selected.includes(opt);
         return (
           <button
@@ -150,6 +162,7 @@ function ChipGroup({
           </button>
         );
       })}
+
       {customSelected.map((c) => (
         <button
           key={c}
@@ -160,6 +173,28 @@ function ChipGroup({
           ✓ {c} ×
         </button>
       ))}
+
+      {/* Show more / less */}
+      {shouldCollapse && unselectedHiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors"
+        >
+          + {unselectedHiddenCount} more
+        </button>
+      )}
+      {!shouldCollapse && !!defaultVisible && options.length > defaultVisible && (
+        <button
+          type="button"
+          onClick={() => setShowAll(false)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 transition-colors"
+        >
+          Show less
+        </button>
+      )}
+
+      {/* Always visible: + Other */}
       {showCustom ? (
         <div className="flex gap-1.5 items-center">
           <input
@@ -264,18 +299,10 @@ function AlignmentSelect({
             className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
-          <button
-            type="button"
-            onClick={handleAdd}
-            className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg"
-          >
+          <button type="button" onClick={handleAdd} className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg">
             Save
           </button>
-          <button
-            type="button"
-            onClick={() => setShowAdd(false)}
-            className="px-3 py-2 text-slate-500 text-sm"
-          >
+          <button type="button" onClick={() => setShowAdd(false)} className="px-3 py-2 text-slate-500 text-sm">
             Cancel
           </button>
         </div>
@@ -329,7 +356,7 @@ function OutputCard({
     outputKey === "accomplishmentStatement";
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
           {label}
@@ -391,7 +418,7 @@ export default function TrackerPage() {
   const [leadershipPriority, setLeadershipPriority] = useState("");
 
   const [section2Open, setSection2Open] = useState(true);
-  const [section3Open, setSection3Open] = useState(false); // collapsed by default
+  const [section3Open, setSection3Open] = useState(false);
   const [userSettings, setUserSettings] = useState<UserSettings>({
     strategicPriorities: [],
     kpiMetrics: [],
@@ -449,11 +476,7 @@ export default function TrackerPage() {
         if (data.demo) setDemoMode(true);
         setRefinedOutputs(data.outputs);
         setTimeout(
-          () =>
-            outputsRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            }),
+          () => outputsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
           100
         );
       }
@@ -493,25 +516,37 @@ export default function TrackerPage() {
     setTimeout(() => router.push("/dashboard"), 800);
   }
 
-  const card = "bg-white border border-slate-200 rounded-xl p-5";
+  const card = "bg-white border border-slate-200 rounded-xl p-5 shadow-sm";
   const fieldLabel = "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
     <div className="max-w-2xl mx-auto space-y-3">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Capture Impact</h1>
+
+      {/* ── Hero moment ───────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900 mb-1">
+            Capture Impact
+          </h1>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Track meaningful work, connect it to business value, and turn it
+            into language that lands.
+          </p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Used for reviews, leadership updates, promotions, and career growth.
+          </p>
+        </div>
         <a
           href="/dashboard"
-          className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+          className="text-sm text-slate-400 hover:text-slate-600 transition-colors shrink-0 mt-1"
         >
           ← My Impact
         </a>
       </div>
 
-      {/* ── Section 1 ─────────────────────────────────────────────────────── */}
+      {/* ── Section 1: What happened? ─────────────────────────────────────── */}
       <div className={card}>
         <SectionHeader title="What happened?" />
-
         <div className="space-y-4">
           <div>
             <label className={fieldLabel}>
@@ -529,7 +564,6 @@ export default function TrackerPage() {
               className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
             />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={fieldLabel}>Date of impact</label>
@@ -547,20 +581,20 @@ export default function TrackerPage() {
                 onChange={(e) => setPrimaryUse(e.target.value as PrimaryUse)}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {(
-                  Object.entries(PRIMARY_USE_LABELS) as [PrimaryUse, string][]
-                ).map(([val, label]) => (
-                  <option key={val} value={val}>
-                    {label}
-                  </option>
-                ))}
+                {(Object.entries(PRIMARY_USE_LABELS) as [PrimaryUse, string][]).map(
+                  ([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  )
+                )}
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Section 2: Context ─────────────────────────────────────────────── */}
+      {/* ── Section 2: Add Context ────────────────────────────────────────── */}
       <div className={card}>
         <SectionHeader
           title="Add Context"
@@ -568,13 +602,12 @@ export default function TrackerPage() {
           open={section2Open}
           onToggle={() => setSection2Open(!section2Open)}
         />
-
         {section2Open && (
           <div className="space-y-4">
             <div>
-              <label className={fieldLabel}>Who benefited?</label>
+              <label className={fieldLabel}>Who did this help?</label>
               <ChipGroup
-                options={WHO_BENEFITED}
+                options={WHO_HELPED}
                 selected={whoBenefited}
                 onChange={setWhoBenefited}
               />
@@ -585,6 +618,7 @@ export default function TrackerPage() {
                 options={CONTRIBUTION_TYPES}
                 selected={contributionTypes}
                 onChange={setContributionTypes}
+                defaultVisible={6}
               />
             </div>
             <div>
@@ -593,6 +627,7 @@ export default function TrackerPage() {
                 options={IMPACT_TYPES}
                 selected={impactTypes}
                 onChange={setImpactTypes}
+                defaultVisible={7}
               />
             </div>
             <div>
@@ -612,7 +647,7 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* ── Section 3: Alignment ───────────────────────────────────────────── */}
+      {/* ── Section 3: Alignment ─────────────────────────────────────────── */}
       <div className={card}>
         <SectionHeader
           title="Alignment"
@@ -620,7 +655,6 @@ export default function TrackerPage() {
           open={section3Open}
           onToggle={() => setSection3Open(!section3Open)}
         />
-
         {section3Open && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -671,7 +705,7 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* ── Generate ──────────────────────────────────────────────────────── */}
+      {/* ── Generate ─────────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={handleGenerate}
@@ -691,7 +725,7 @@ export default function TrackerPage() {
         </div>
       )}
 
-      {/* ── Section 4: AI Outputs ─────────────────────────────────────────── */}
+      {/* ── Section 4: AI Outputs ────────────────────────────────────────── */}
       {refinedOutputs && (
         <div ref={outputsRef} className="space-y-3 pt-1">
           <div className="flex items-center justify-between">

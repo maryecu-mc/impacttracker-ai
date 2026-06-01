@@ -99,9 +99,10 @@ function downloadText(text: string, filename: string) {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatCard({ value, label }: { value: number | string; label: string }) {
+  const isString = typeof value === "string";
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5">
-      <p className="text-3xl font-bold text-slate-900 mb-1">{value}</p>
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <p className={`font-bold text-slate-900 mb-1 leading-tight ${isString ? "text-base" : "text-3xl"}`}>{value}</p>
       <p className="text-sm text-slate-500">{label}</p>
     </div>
   );
@@ -116,8 +117,8 @@ function BarList({
 }) {
   const max = items[0]?.[1] ?? 1;
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5">
-      <p className="text-xs font-semibold tracking-widest uppercase text-slate-500 mb-4">
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <p className="text-sm font-semibold text-slate-700 mb-4">
         {title}
       </p>
       {items.length === 0 ? (
@@ -168,7 +169,7 @@ function EntryCard({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5">
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-slate-400">{formatDate(date)}</span>
@@ -348,7 +349,7 @@ export default function DashboardPage() {
           href="/tracker"
           className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
         >
-          Capture an Impact
+          Capture Impact
         </Link>
       </div>
     );
@@ -376,13 +377,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard value={entries.length} label="Total impacts captured" />
-        <StatCard value={thisMonthCount} label="Captured this month" />
-        <StatCard
-          value={Array.from(new Set(entries.flatMap((e) => e.impactTypes))).length}
-          label="Unique impact types"
-        />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard value={entries.length} label="Total captures" />
+        <StatCard value={thisMonthCount} label="This month" />
+        <StatCard value={topImpactTypes[0]?.[0] ?? "—"} label="Top impact area" />
+        <StatCard value={topStrategic[0]?.[0] ?? "—"} label="Top strategic priority" />
       </div>
 
       {/* Charts */}
@@ -393,8 +392,8 @@ export default function DashboardPage() {
 
       {/* Themes */}
       {themes.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <p className="text-xs font-semibold tracking-widest uppercase text-slate-500 mb-1">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <p className="text-sm font-semibold text-slate-700 mb-1">
             Where your impact is concentrated
           </p>
           <p className="text-xs text-slate-400 mb-4">
@@ -442,7 +441,7 @@ export default function DashboardPage() {
       {/* Entries grouped by month */}
       {Object.entries(byMonth).map(([month, monthEntries]) => (
         <div key={month}>
-          <h2 className="text-xs font-semibold tracking-widest uppercase text-slate-400 mb-3">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2 mb-3">
             {month}
           </h2>
           <div className="space-y-3">

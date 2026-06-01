@@ -63,7 +63,7 @@ export default function Home() {
         ].map((step) => (
           <div
             key={step.title}
-            className="bg-white border border-slate-200 rounded-xl p-5"
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
           >
             <div className="text-blue-600 text-lg mb-2">{step.icon}</div>
             <h3 className="font-semibold text-slate-900 mb-1 text-sm">
