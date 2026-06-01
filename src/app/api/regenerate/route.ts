@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import type { RegenerateRequest, RegenerateResponse } from "@/lib/types";
-
-const client = new Anthropic();
 
 const FORMAT_INSTRUCTIONS: Record<string, string> = {
   accomplishmentStatement:
@@ -21,6 +18,23 @@ const FORMAT_INSTRUCTIONS: Record<string, string> = {
     "Write a STAR-format accomplishment using exactly these headers on separate lines: Situation:, Task:, Action:, Result:. Use \\n between each section.",
 };
 
+function demoRegenerate(rawInput: string, outputKey: string): string {
+  const input = rawInput.trim();
+  const lc = input.charAt(0).toLowerCase() + input.slice(1);
+
+  const map: Record<string, string> = {
+    accomplishmentStatement: `${input}. The work required initiative and careful coordination to execute well. The result strengthened team operations and delivered clear value to key stakeholders.`,
+    measurableImpact: `By completing ${lc}, the team gained meaningful efficiency and reduced delays on related workstreams. The outcome was directly tied to organizational priorities.`,
+    performanceReviewBullet: `Drove ${lc}, resulting in improved team performance and stakeholder satisfaction.`,
+    leadershipUpdateBullet: `Delivered: ${input}. Outcomes are positive and aligned with current goals.`,
+    careerStoryBullet: `Demonstrated ownership and impact by ${lc}, producing results that advanced team and organizational goals.`,
+    executiveSummary: `The work centered on ${lc}. Execution was strong and the outcome was well-received by stakeholders. This contribution supported the team's ability to operate effectively and stay aligned with strategic direction.`,
+    starFormat: `Situation: Context required action on ${lc}.\nTask: Deliver results within existing resources and timeline.\nAction: ${input}.\nResult: Work was completed with positive outcomes for the team and key stakeholders.`,
+  };
+
+  return map[outputKey] ?? `Refreshed: ${input}.`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body: RegenerateRequest = await req.json();
@@ -33,6 +47,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // No API key — return demo regeneration
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json<RegenerateResponse>({
+        text: demoRegenerate(rawInput, outputKey),
+        demo: true,
+      } as RegenerateResponse & { demo: boolean });
+    }
+
     const instruction = FORMAT_INSTRUCTIONS[outputKey] ?? "Rewrite this accomplishment.";
 
     const contextLines = [`Contribution: ${rawInput}`];
@@ -43,6 +65,9 @@ export async function POST(req: NextRequest) {
     if (context.strategicPriority) contextLines.push(`Strategic priority: ${context.strategicPriority}`);
     if (context.kpiMetric) contextLines.push(`KPI / Metric: ${context.kpiMetric}`);
     if (context.companyValue) contextLines.push(`Company value: ${context.companyValue}`);
+
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic();
 
     const message = await client.messages.create({
       model: "claude-opus-4-8",
@@ -61,7 +86,7 @@ Language rules:
   } catch (err) {
     console.error("Regenerate error:", err);
     return NextResponse.json<RegenerateResponse>(
-      { text: "", error: "Regeneration failed. Try again." },
+      { text: "", error: "Could not regenerate. Please try again." },
       { status: 500 }
     );
   }

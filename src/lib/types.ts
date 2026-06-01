@@ -68,6 +68,7 @@ export interface RefineRequest {
 export interface RefineResponse {
   outputs: RefinedOutputs;
   error?: string;
+  demo?: boolean; // true when running without an API key
 }
 
 export interface RegenerateRequest {
