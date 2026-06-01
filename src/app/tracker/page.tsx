@@ -13,11 +13,11 @@ import type {
   RefinedOutputs,
   RefineRequest,
   UserSettings,
-  VisibilityLevel,
+  PrimaryUse,
 } from "@/lib/types";
-import { VISIBILITY_LABELS } from "@/lib/types";
+import { PRIMARY_USE_LABELS } from "@/lib/types";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const WHO_BENEFITED = [
   "Executive / leadership team",
@@ -73,6 +73,35 @@ const OUTPUT_LABELS: Record<keyof RefinedOutputs, string> = {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+function SectionHeader({
+  title,
+  collapsible = false,
+  open,
+  onToggle,
+}: {
+  title: string;
+  collapsible?: boolean;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-sm font-semibold text-slate-800 border-l-2 border-blue-500 pl-3 leading-tight">
+        {title}
+      </h2>
+      {collapsible && onToggle && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs text-slate-400 hover:text-slate-600 transition-colors px-2 py-1"
+        >
+          {open ? "Hide" : "Show"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ChipGroup({
   options,
   selected,
@@ -84,7 +113,6 @@ function ChipGroup({
 }) {
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
 
   function toggle(value: string) {
     onChange(
@@ -104,39 +132,41 @@ function ChipGroup({
   const customSelected = selected.filter((s) => !options.includes(s));
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => toggle(opt)}
-          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-            selected.includes(opt)
-              ? "bg-blue-50 border-blue-200 text-blue-700"
-              : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-          }`}
-        >
-          {opt}
-        </button>
-      ))}
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((opt) => {
+        const isSelected = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => toggle(opt)}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-all font-medium ${
+              isSelected
+                ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            {isSelected ? `✓ ${opt}` : opt}
+          </button>
+        );
+      })}
       {customSelected.map((c) => (
         <button
           key={c}
           type="button"
           onClick={() => toggle(c)}
-          className="px-3 py-1.5 rounded-full text-sm border bg-blue-50 border-blue-200 text-blue-700"
+          className="px-3 py-1.5 rounded-full text-sm border bg-blue-600 border-blue-600 text-white font-medium shadow-sm"
         >
-          {c} ×
+          ✓ {c} ×
         </button>
       ))}
       {showCustom ? (
         <div className="flex gap-1.5 items-center">
           <input
-            ref={inputRef}
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
-            placeholder="Type and press Enter..."
+            placeholder="Type and press Enter…"
             className="px-2.5 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-44"
             autoFocus
           />
@@ -209,7 +239,7 @@ function AlignmentSelect({
           onChange={(e) => onChange(e.target.value)}
           className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">Select...</option>
+          <option value="">Select…</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -230,7 +260,7 @@ function AlignmentSelect({
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="Enter custom value..."
+            placeholder="Enter custom value…"
             className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
@@ -293,12 +323,15 @@ function OutputCard({
     }
   }
 
-  const isMultiLine = outputKey === "starFormat" || outputKey === "executiveSummary" || outputKey === "accomplishmentStatement";
+  const isMultiLine =
+    outputKey === "starFormat" ||
+    outputKey === "executiveSummary" ||
+    outputKey === "accomplishmentStatement";
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-3">
+    <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-widest uppercase text-slate-500">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
           {label}
         </span>
         <button
@@ -320,7 +353,7 @@ function OutputCard({
       >
         {text}
       </p>
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-1 border-t border-slate-100">
         <button
           type="button"
           onClick={handleRegenerate}
@@ -328,9 +361,7 @@ function OutputCard({
           className="text-xs text-slate-400 hover:text-blue-600 transition-colors disabled:opacity-50 flex items-center gap-1"
         >
           {regenerating ? (
-            <>
-              <span className="animate-spin inline-block">↺</span> Regenerating…
-            </>
+            <><span className="animate-spin inline-block">↺</span> Regenerating…</>
           ) : (
             <>↺ Refresh</>
           )}
@@ -346,11 +377,9 @@ export default function TrackerPage() {
   const router = useRouter();
   const outputsRef = useRef<HTMLDivElement>(null);
 
-  // Form state
   const [rawInput, setRawInput] = useState("");
   const [dateOfImpact, setDateOfImpact] = useState(todayISO());
-  const [visibilityLevel, setVisibilityLevel] =
-    useState<VisibilityLevel>("career-safe");
+  const [primaryUse, setPrimaryUse] = useState<PrimaryUse>("multi-purpose");
   const [whoBenefited, setWhoBenefited] = useState<string[]>([]);
   const [impactTypes, setImpactTypes] = useState<string[]>([]);
   const [contributionTypes, setContributionTypes] = useState<string[]>([]);
@@ -361,9 +390,8 @@ export default function TrackerPage() {
   const [projectInitiative, setProjectInitiative] = useState("");
   const [leadershipPriority, setLeadershipPriority] = useState("");
 
-  // UI state
   const [section2Open, setSection2Open] = useState(true);
-  const [section3Open, setSection3Open] = useState(true);
+  const [section3Open, setSection3Open] = useState(false); // collapsed by default
   const [userSettings, setUserSettings] = useState<UserSettings>({
     strategicPriorities: [],
     kpiMetrics: [],
@@ -372,29 +400,22 @@ export default function TrackerPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [refinedOutputs, setRefinedOutputs] = useState<RefinedOutputs | null>(
-    null
-  );
+  const [refinedOutputs, setRefinedOutputs] = useState<RefinedOutputs | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setUserSettings(getUserSettings());
   }, []);
 
-  function addToSettings(
-    key: keyof UserSettings,
-    value: string
-  ) {
-    const updated = {
-      ...userSettings,
-      [key]: [...userSettings[key], value],
-    };
+  function addToSettings(key: keyof UserSettings, value: string) {
+    const updated = { ...userSettings, [key]: [...userSettings[key], value] };
     setUserSettings(updated);
     saveUserSettings(updated);
   }
 
   function buildContext(): Omit<RefineRequest, "rawInput"> {
     return {
+      primaryUse,
       dateOfImpact,
       whoBenefited,
       impactTypes,
@@ -425,7 +446,11 @@ export default function TrackerPage() {
       } else {
         setRefinedOutputs(data.outputs);
         setTimeout(
-          () => outputsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+          () =>
+            outputsRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            }),
           100
         );
       }
@@ -448,7 +473,7 @@ export default function TrackerPage() {
       createdAt: now,
       updatedAt: now,
       dateOfImpact,
-      visibilityLevel,
+      primaryUse,
       rawInput,
       whoBenefited,
       impactTypes,
@@ -465,19 +490,13 @@ export default function TrackerPage() {
     setTimeout(() => router.push("/dashboard"), 800);
   }
 
-  const sectionHeaderClass =
-    "flex items-center justify-between mb-5";
-  const sectionLabelClass =
-    "text-xs font-semibold tracking-widest uppercase text-slate-500";
-  const collapseButtonClass =
-    "text-xs text-slate-400 hover:text-slate-600 transition-colors";
-  const cardClass = "bg-white border border-slate-200 rounded-xl p-6";
-  const fieldLabelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+  const card = "bg-white border border-slate-200 rounded-xl p-5";
+  const fieldLabel = "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Capture an Impact</h1>
+    <div className="max-w-2xl mx-auto space-y-3">
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-lg font-semibold text-slate-900">Capture Impact</h1>
         <a
           href="/dashboard"
           className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
@@ -486,20 +505,18 @@ export default function TrackerPage() {
         </a>
       </div>
 
-      {/* ── Section 1: Capture ─────────────────────────────────────────────── */}
-      <div className={cardClass}>
-        <div className={sectionHeaderClass}>
-          <span className={sectionLabelClass}>1 — What happened?</span>
-        </div>
+      {/* ── Section 1 ─────────────────────────────────────────────────────── */}
+      <div className={card}>
+        <SectionHeader title="What happened?" />
 
         <div className="space-y-4">
           <div>
-            <label className={fieldLabelClass}>
+            <label className={fieldLabel}>
               What happened or what did you contribute?
             </label>
             <p className="text-xs text-slate-400 mb-2">
-              Include accomplishments, support provided, problems solved,
-              process improvements, leadership support, or outcomes.
+              Accomplishments, support provided, problems solved, process
+              improvements, leadership support, or outcomes.
             </p>
             <textarea
               value={rawInput}
@@ -510,9 +527,9 @@ export default function TrackerPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={fieldLabelClass}>Date of impact</label>
+              <label className={fieldLabel}>Date of impact</label>
               <input
                 type="date"
                 value={dateOfImpact}
@@ -521,19 +538,14 @@ export default function TrackerPage() {
               />
             </div>
             <div>
-              <label className={fieldLabelClass}>Visibility</label>
+              <label className={fieldLabel}>Primary use</label>
               <select
-                value={visibilityLevel}
-                onChange={(e) =>
-                  setVisibilityLevel(e.target.value as VisibilityLevel)
-                }
+                value={primaryUse}
+                onChange={(e) => setPrimaryUse(e.target.value as PrimaryUse)}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {(
-                  Object.entries(VISIBILITY_LABELS) as [
-                    VisibilityLevel,
-                    string,
-                  ][]
+                  Object.entries(PRIMARY_USE_LABELS) as [PrimaryUse, string][]
                 ).map(([val, label]) => (
                   <option key={val} value={val}>
                     {label}
@@ -546,51 +558,42 @@ export default function TrackerPage() {
       </div>
 
       {/* ── Section 2: Context ─────────────────────────────────────────────── */}
-      <div className={cardClass}>
-        <div className={sectionHeaderClass}>
-          <span className={sectionLabelClass}>2 — Add context</span>
-          <button
-            type="button"
-            onClick={() => setSection2Open(!section2Open)}
-            className={collapseButtonClass}
-          >
-            {section2Open ? "▾ Collapse" : "▸ Expand"}
-          </button>
-        </div>
+      <div className={card}>
+        <SectionHeader
+          title="Add Context"
+          collapsible
+          open={section2Open}
+          onToggle={() => setSection2Open(!section2Open)}
+        />
 
         {section2Open && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div>
-              <label className={fieldLabelClass}>Who benefited?</label>
+              <label className={fieldLabel}>Who benefited?</label>
               <ChipGroup
                 options={WHO_BENEFITED}
                 selected={whoBenefited}
                 onChange={setWhoBenefited}
               />
             </div>
-
             <div>
-              <label className={fieldLabelClass}>
-                Work type / Contribution type
-              </label>
+              <label className={fieldLabel}>Work type</label>
               <ChipGroup
                 options={CONTRIBUTION_TYPES}
                 selected={contributionTypes}
                 onChange={setContributionTypes}
               />
             </div>
-
             <div>
-              <label className={fieldLabelClass}>Impact type</label>
+              <label className={fieldLabel}>Impact type</label>
               <ChipGroup
                 options={IMPACT_TYPES}
                 selected={impactTypes}
                 onChange={setImpactTypes}
               />
             </div>
-
             <div>
-              <label className={fieldLabelClass}>
+              <label className={fieldLabel}>
                 Estimated impact{" "}
                 <span className="text-slate-400 font-normal">(optional)</span>
               </label>
@@ -607,17 +610,13 @@ export default function TrackerPage() {
       </div>
 
       {/* ── Section 3: Alignment ───────────────────────────────────────────── */}
-      <div className={cardClass}>
-        <div className={sectionHeaderClass}>
-          <span className={sectionLabelClass}>3 — Alignment</span>
-          <button
-            type="button"
-            onClick={() => setSection3Open(!section3Open)}
-            className={collapseButtonClass}
-          >
-            {section3Open ? "▾ Collapse" : "▸ Expand"}
-          </button>
-        </div>
+      <div className={card}>
+        <SectionHeader
+          title="Alignment"
+          collapsible
+          open={section3Open}
+          onToggle={() => setSection3Open(!section3Open)}
+        />
 
         {section3Open && (
           <div className="space-y-4">
@@ -653,7 +652,7 @@ export default function TrackerPage() {
               />
             </div>
             <div>
-              <label className={fieldLabelClass}>
+              <label className={fieldLabel}>
                 Leadership Priority{" "}
                 <span className="text-slate-400 font-normal">(optional)</span>
               </label>
@@ -669,38 +668,34 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* ── Generate button ────────────────────────────────────────────────── */}
+      {/* ── Generate ──────────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={handleGenerate}
         disabled={loading || !rawInput.trim()}
-        className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2"
+        className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-base flex items-center justify-center gap-2 shadow-sm"
       >
         {loading ? (
-          <>
-            <span className="animate-spin inline-block">✦</span> Generating AI
-            outputs…
-          </>
+          <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
         ) : (
           <>✦ Generate AI Outputs</>
         )}
       </button>
 
-      {error && (
-        <p className="text-red-600 text-sm text-center">{error}</p>
-      )}
+      {error && <p className="text-red-600 text-sm text-center">{error}</p>}
 
       {/* ── Section 4: AI Outputs ─────────────────────────────────────────── */}
       {refinedOutputs && (
-        <div ref={outputsRef} className="space-y-4 pt-2">
+        <div ref={outputsRef} className="space-y-3 pt-1">
           <div className="flex items-center justify-between">
-            <span className={sectionLabelClass}>4 — AI outputs</span>
+            <h2 className="text-sm font-semibold text-slate-800 border-l-2 border-blue-500 pl-3">
+              AI Outputs
+            </h2>
             <span className="text-xs text-slate-400">
-              Copy or refresh individual outputs
+              Copy or refresh each output individually
             </span>
           </div>
 
-          {/* Accomplishment Statement — full width */}
           <OutputCard
             label={OUTPUT_LABELS.accomplishmentStatement}
             outputKey="accomplishmentStatement"
@@ -710,8 +705,7 @@ export default function TrackerPage() {
             onRegenerated={handleRegenerated}
           />
 
-          {/* 2-col grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <OutputCard
               label={OUTPUT_LABELS.performanceReviewBullet}
               outputKey="performanceReviewBullet"
@@ -766,7 +760,7 @@ export default function TrackerPage() {
             type="button"
             onClick={handleSave}
             disabled={saved}
-            className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors text-sm"
+            className="w-full bg-slate-900 text-white py-4 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors text-base"
           >
             {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
           </button>

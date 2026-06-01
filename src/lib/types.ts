@@ -1,14 +1,16 @@
-export type VisibilityLevel =
-  | "just-for-me"
-  | "manager-discussion"
-  | "leadership-ready"
-  | "career-safe";
+export type PrimaryUse =
+  | "personal-tracking"
+  | "performance-review"
+  | "leadership-update"
+  | "career-growth"
+  | "multi-purpose";
 
-export const VISIBILITY_LABELS: Record<VisibilityLevel, string> = {
-  "just-for-me": "Just for me",
-  "manager-discussion": "Manager discussion",
-  "leadership-ready": "Leadership-ready",
-  "career-safe": "Career-safe",
+export const PRIMARY_USE_LABELS: Record<PrimaryUse, string> = {
+  "personal-tracking": "Personal tracking",
+  "performance-review": "Performance review",
+  "leadership-update": "Leadership update",
+  "career-growth": "Career growth",
+  "multi-purpose": "Multi-purpose",
 };
 
 export interface RefinedOutputs {
@@ -25,26 +27,21 @@ export interface ImpactEntry {
   id: string;
   createdAt: string;
   updatedAt: string;
-  dateOfImpact: string; // YYYY-MM-DD
-  visibilityLevel: VisibilityLevel;
+  dateOfImpact: string;
+  primaryUse: PrimaryUse;
 
-  // Section 1
   rawInput: string;
-
-  // Section 2 — Context
   whoBenefited: string[];
   impactTypes: string[];
   contributionTypes: string[];
   estimatedImpact: string;
 
-  // Section 3 — Alignment
   strategicPriority: string;
   kpiMetric: string;
   companyValue: string;
   projectInitiative: string;
   leadershipPriority: string;
 
-  // Section 4 — AI outputs
   refinedOutputs: RefinedOutputs | null;
 }
 
@@ -57,6 +54,7 @@ export interface UserSettings {
 
 export interface RefineRequest {
   rawInput: string;
+  primaryUse: PrimaryUse;
   dateOfImpact: string;
   whoBenefited: string[];
   impactTypes: string[];
