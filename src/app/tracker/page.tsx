@@ -400,6 +400,7 @@ export default function TrackerPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [demoMode, setDemoMode] = useState(false);
   const [refinedOutputs, setRefinedOutputs] = useState<RefinedOutputs | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -431,6 +432,7 @@ export default function TrackerPage() {
     if (!rawInput.trim()) return;
     setLoading(true);
     setError("");
+    setDemoMode(false);
     setRefinedOutputs(null);
     setSaved(false);
 
@@ -444,6 +446,7 @@ export default function TrackerPage() {
       if (data.error) {
         setError(data.error);
       } else {
+        if (data.demo) setDemoMode(true);
         setRefinedOutputs(data.outputs);
         setTimeout(
           () =>
@@ -682,7 +685,11 @@ export default function TrackerPage() {
         )}
       </button>
 
-      {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* ── Section 4: AI Outputs ─────────────────────────────────────────── */}
       {refinedOutputs && (
@@ -695,6 +702,22 @@ export default function TrackerPage() {
               Copy or refresh each output individually
             </span>
           </div>
+
+          {demoMode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2.5">
+              <span className="text-amber-500 mt-0.5 shrink-0">◈</span>
+              <div>
+                <p className="text-sm font-medium text-amber-800">Demo mode</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  These outputs are generated from templates, not AI. Add{" "}
+                  <code className="bg-amber-100 px-1 py-0.5 rounded text-xs font-mono">
+                    ANTHROPIC_API_KEY
+                  </code>{" "}
+                  to your Vercel environment variables to enable full AI generation.
+                </p>
+              </div>
+            </div>
+          )}
 
           <OutputCard
             label={OUTPUT_LABELS.accomplishmentStatement}
