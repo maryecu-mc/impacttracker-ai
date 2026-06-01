@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { getEntries, deleteEntry } from "@/lib/storage";
 import type { ImpactEntry } from "@/lib/types";
-import { VISIBILITY_LABELS } from "@/lib/types";
+import { PRIMARY_USE_LABELS } from "@/lib/types";
 import Link from "next/link";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -159,11 +159,12 @@ function EntryCard({
     entry.refinedOutputs?.performanceReviewBullet ||
     entry.refinedOutputs?.accomplishmentStatement;
 
-  const visibilityColors: Record<string, string> = {
-    "just-for-me": "bg-slate-100 text-slate-500",
-    "manager-discussion": "bg-amber-50 text-amber-700",
-    "leadership-ready": "bg-blue-50 text-blue-700",
-    "career-safe": "bg-green-50 text-green-700",
+  const primaryUseColors: Record<string, string> = {
+    "personal-tracking": "bg-slate-100 text-slate-500",
+    "performance-review": "bg-violet-50 text-violet-700",
+    "leadership-update": "bg-blue-50 text-blue-700",
+    "career-growth": "bg-green-50 text-green-700",
+    "multi-purpose": "bg-amber-50 text-amber-700",
   };
 
   return (
@@ -171,14 +172,14 @@ function EntryCard({
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-slate-400">{formatDate(date)}</span>
-          {entry.visibilityLevel && (
+          {entry.primaryUse && (
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                visibilityColors[entry.visibilityLevel] ??
+                primaryUseColors[entry.primaryUse] ??
                 "bg-slate-100 text-slate-500"
               }`}
             >
-              {VISIBILITY_LABELS[entry.visibilityLevel]}
+              {PRIMARY_USE_LABELS[entry.primaryUse] ?? entry.primaryUse}
             </span>
           )}
         </div>

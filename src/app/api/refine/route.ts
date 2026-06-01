@@ -17,6 +17,7 @@ CRITICAL language rules:
 - Career story bullet should work equally for promotions, interviews, reviews, and career conversations — not just job applications
 - STAR format must use exactly these headers on separate lines: Situation:, Task:, Action:, Result:
 - starFormat field: use \\n between each STAR section header and its content
+- When "Primary use" is provided, weight that format's quality highest while keeping all others strong
 
 Return this exact JSON shape:
 {
@@ -31,6 +32,7 @@ Return this exact JSON shape:
 
 function buildUserPrompt(body: RefineRequest): string {
   const lines = [`Contribution: ${body.rawInput}`];
+  if (body.primaryUse) lines.push(`Primary use: ${body.primaryUse.replace(/-/g, " ")}`);
   if (body.whoBenefited.length) lines.push(`Who benefited: ${body.whoBenefited.join(", ")}`);
   if (body.contributionTypes.length) lines.push(`Work type: ${body.contributionTypes.join(", ")}`);
   if (body.impactTypes.length) lines.push(`Impact types: ${body.impactTypes.join(", ")}`);
