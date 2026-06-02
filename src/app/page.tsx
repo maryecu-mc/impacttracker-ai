@@ -13,18 +13,16 @@ const roles = [
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center gap-8">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center gap-6">
       <div className="max-w-2xl">
-        <h1 className="text-4xl font-bold text-slate-900 mb-4 leading-tight tracking-tight">
-          Stop losing the value
+        <h1 className="text-4xl font-bold text-slate-900 mb-3 leading-tight tracking-tight">
+          Capture the impact
           <br />
           of your work.
         </h1>
         <p className="text-lg text-slate-500 leading-relaxed">
-          Capture accomplishments, contributions, and business impact.
-          <br />
-          Let AI turn everyday work into language that lands in reviews,
-          updates, decks, and conversations.
+          Track accomplishments, connect them to business value, and turn
+          everyday work into language that lands.
         </p>
       </div>
 
@@ -37,33 +35,33 @@ export default function Home() {
         </Link>
         <Link
           href="/dashboard"
-          className="border border-slate-200 text-slate-700 bg-white px-6 py-3 rounded-lg font-medium hover:bg-slate-50 transition-colors text-sm"
+          className="border border-slate-300 text-slate-700 bg-white px-6 py-3 rounded-lg font-medium hover:bg-slate-50 hover:border-slate-400 transition-colors text-sm"
         >
           My Impact
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl text-left mt-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl text-left">
         {[
           {
             icon: "✦",
-            title: "Capture",
-            desc: "Describe what you contributed in plain language — accomplishments, support, problem-solving, or outcomes.",
+            title: "Capture Work",
+            desc: "Describe what you contributed in plain language — accomplishments, problem-solving, support, or outcomes.",
           },
           {
             icon: "⬡",
-            title: "Connect",
-            desc: "Link contributions to strategy, KPIs, team impact, and company values in a way that's easy to articulate.",
+            title: "Connect Value",
+            desc: "Link your work to strategy, KPIs, and company priorities in language that resonates with stakeholders.",
           },
           {
             icon: "◎",
-            title: "Communicate",
-            desc: "AI generates ready-to-use language for reviews, leadership updates, career conversations, and decks.",
+            title: "Communicate Impact",
+            desc: "AI turns your work into ready-to-use language for reviews, leadership updates, and career conversations.",
           },
         ].map((step) => (
           <div
             key={step.title}
-            className="bg-white border border-slate-200 rounded-xl p-5"
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
           >
             <div className="text-blue-600 text-lg mb-2">{step.icon}</div>
             <h3 className="font-semibold text-slate-900 mb-1 text-sm">
@@ -74,8 +72,8 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="mt-2">
-        <p className="text-xs text-slate-400 mb-2">Works for</p>
+      <div>
+        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5">Built for</p>
         <div className="flex flex-wrap justify-center gap-2">
           {roles.map((r) => (
             <span
