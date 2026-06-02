@@ -25,21 +25,21 @@ export default function Home() {
           everyday work into language that lands.
         </p>
         <p className="text-sm text-slate-400 mt-3 leading-relaxed italic">
-          Built for the work that rarely makes it into the update, but
-          absolutely moves the business forward.
+          Because the work that matters most is often the work we forget at
+          review time.
         </p>
       </div>
 
       <div className="flex gap-3">
         <Link
           href="/tracker"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm shadow-sm"
         >
           Capture Impact
         </Link>
         <Link
           href="/dashboard"
-          className="border border-slate-300 text-slate-700 bg-white px-6 py-3 rounded-lg font-medium hover:bg-slate-50 hover:border-slate-400 transition-colors text-sm"
+          className="border border-slate-300 text-slate-700 bg-white px-6 py-3 rounded-lg font-medium hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900 transition-colors text-sm"
         >
           My Impact
         </Link>
@@ -65,7 +65,7 @@ export default function Home() {
         ].map((step) => (
           <div
             key={step.title}
-            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
           >
             <div className="text-blue-600 text-lg mb-2">{step.icon}</div>
             <h3 className="font-semibold text-slate-900 mb-1 text-sm">
@@ -77,12 +77,14 @@ export default function Home() {
       </div>
 
       <div>
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5">Built for</p>
+        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5">
+          Built for
+        </p>
         <div className="flex flex-wrap justify-center gap-2">
           {roles.map((r) => (
             <span
               key={r}
-              className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full"
+              className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors"
             >
               {r}
             </span>

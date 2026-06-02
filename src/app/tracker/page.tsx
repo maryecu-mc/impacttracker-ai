@@ -112,11 +112,15 @@ function ChipGroup({
   selected,
   onChange,
   defaultVisible,
+  moreLabel,
+  fewerLabel,
 }: {
   options: string[];
   selected: string[];
   onChange: (values: string[]) => void;
   defaultVisible?: number;
+  moreLabel?: string;
+  fewerLabel?: string;
 }) {
   const [showAll, setShowAll] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
@@ -182,7 +186,7 @@ function ChipGroup({
           onClick={() => setShowAll(true)}
           className="px-3 py-1.5 rounded-full text-sm border border-dashed border-blue-300 text-blue-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium"
         >
-          + {hiddenUnselectedCount} more
+          {moreLabel ?? `+ ${hiddenUnselectedCount} more`}
         </button>
       )}
       {!shouldCollapse && defaultVisible && options.length > defaultVisible && (
@@ -191,7 +195,7 @@ function ChipGroup({
           onClick={() => setShowAll(false)}
           className="px-3 py-1.5 rounded-full text-sm border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500 transition-colors"
         >
-          Show less
+          {fewerLabel ?? "Show less"}
         </button>
       )}
       {showCustom ? (
@@ -620,6 +624,8 @@ export default function TrackerPage() {
                 selected={contributionTypes}
                 onChange={setContributionTypes}
                 defaultVisible={CONTRIBUTION_TYPES_DEFAULT_VISIBLE}
+                moreLabel="More work types →"
+                fewerLabel="Show fewer work types"
               />
             </div>
             <div>
@@ -629,6 +635,8 @@ export default function TrackerPage() {
                 selected={impactTypes}
                 onChange={setImpactTypes}
                 defaultVisible={IMPACT_TYPES_DEFAULT_VISIBLE}
+                moreLabel="More impact types →"
+                fewerLabel="Show fewer impact types"
               />
             </div>
             <div>
@@ -713,7 +721,7 @@ export default function TrackerPage() {
           type="button"
           onClick={handleSave}
           disabled={saved || !rawInput.trim()}
-          className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+          className="w-full bg-slate-700 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
         >
           {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
         </button>
@@ -829,7 +837,7 @@ export default function TrackerPage() {
             type="button"
             onClick={handleSave}
             disabled={saved}
-            className="w-full bg-slate-900 text-white py-4 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors text-base"
+            className="w-full bg-slate-700 text-white py-4 rounded-xl font-semibold hover:bg-slate-600 disabled:opacity-50 transition-colors text-base"
           >
             {saved ? "✓ Saved to My Impact" : "Save Refined Impact"}
           </button>
