@@ -95,7 +95,7 @@ function SectionHeader({
           onClick={onToggle}
           className="text-xs text-slate-400 hover:text-slate-600 transition-colors px-2 py-1"
         >
-          {open ? "Hide" : "Show"}
+          {open ? "Hide alignment" : "Add strategic alignment"}
         </button>
       )}
     </div>
@@ -510,7 +510,7 @@ export default function TrackerPage() {
 
       {/* ── Section 1 ─────────────────────────────────────────────────────── */}
       <div className={card}>
-        <SectionHeader title="What happened?" />
+        <SectionHeader title="Describe the impact" />
 
         <div className="space-y-4">
           <div>
@@ -525,7 +525,7 @@ export default function TrackerPage() {
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
               rows={5}
-              placeholder="e.g. Coordinated leadership summit for 60 leaders and redesigned the agenda after strategic priorities shifted two days before the event."
+              placeholder={"Examples:\n• Coordinated a leadership summit for 60 leaders\n• Redesigned a reporting process that reduced delays\n• Managed competing priorities during a critical transition"}
               className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
             />
           </div>
@@ -671,19 +671,29 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* ── Generate ──────────────────────────────────────────────────────── */}
-      <button
-        type="button"
-        onClick={handleGenerate}
-        disabled={loading || !rawInput.trim()}
-        className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-base flex items-center justify-center gap-2 shadow-sm"
-      >
-        {loading ? (
-          <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
-        ) : (
-          <>✦ Generate AI Outputs</>
-        )}
-      </button>
+      {/* ── Actions ───────────────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saved || !rawInput.trim()}
+          className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+        >
+          {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={loading || !rawInput.trim()}
+          className="w-full bg-blue-700 text-white py-3 rounded-xl font-medium hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
+          ) : (
+            <>✦ Generate AI Outputs</>
+          )}
+        </button>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
@@ -785,7 +795,7 @@ export default function TrackerPage() {
             disabled={saved}
             className="w-full bg-slate-900 text-white py-4 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors text-base"
           >
-            {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
+            {saved ? "✓ Saved to My Impact" : "Save Refined Impact"}
           </button>
         </div>
       )}
