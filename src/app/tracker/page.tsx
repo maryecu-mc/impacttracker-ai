@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveEntry,
@@ -19,7 +19,7 @@ import { PRIMARY_USE_LABELS } from "@/lib/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const WHO_BENEFITED = [
+const WHO_HELPED = [
   "Executive / leadership team",
   "My team",
   "Customer / client",
@@ -30,36 +30,41 @@ const WHO_BENEFITED = [
 ];
 
 const CONTRIBUTION_TYPES = [
-  "Administrative support",
+  "Operational support",
   "Leadership support",
   "Project coordination",
   "Communication",
   "Relationship management",
+  "Problem solving",
   "Process improvement",
   "Event / meeting execution",
   "Strategic support",
-  "Problem solving",
-  "Customer support",
+  "Stakeholder support",
   "Operations",
   "Change management",
 ];
 
+const CONTRIBUTION_TYPES_DEFAULT_VISIBLE = 6;
+
 const IMPACT_TYPES = [
   "Time savings",
   "Cost savings",
-  "Revenue / profitability support",
   "Risk reduction",
+  "Operational efficiency",
+  "Better decision-making",
+  "Strategic alignment",
+  "Revenue / profitability support",
   "Customer experience",
   "Employee experience",
   "Process improvement",
-  "Operational efficiency",
   "Leadership enablement",
   "Culture / engagement",
   "Project execution",
-  "Strategic alignment",
   "Communication effectiveness",
   "Relationship management",
 ];
+
+const IMPACT_TYPES_DEFAULT_VISIBLE = 6;
 
 const OUTPUT_LABELS: Record<keyof RefinedOutputs, string> = {
   accomplishmentStatement: "Accomplishment Statement",
@@ -71,22 +76,51 @@ const OUTPUT_LABELS: Record<keyof RefinedOutputs, string> = {
   starFormat: "STAR Format",
 };
 
+// ─── Icons ───────────────────────────────────────────────────────────────────
+
+const IconEdit = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+const IconUsers = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
+
+const IconTarget = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+    <circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="12" r="6"/>
+    <circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionHeader({
   title,
+  icon,
   collapsible = false,
   open,
   onToggle,
 }: {
   title: string;
+  icon?: React.ReactNode;
   collapsible?: boolean;
   open?: boolean;
   onToggle?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="text-sm font-semibold text-slate-800 border-l-2 border-blue-500 pl-3 leading-tight">
+      <h2 className="text-sm font-semibold text-slate-800 border-l-2 border-blue-500 pl-3 leading-tight flex items-center gap-2">
+        {icon && <span className="inline-flex items-center">{icon}</span>}
         {title}
       </h2>
       {collapsible && onToggle && (
@@ -95,7 +129,7 @@ function SectionHeader({
           onClick={onToggle}
           className="text-xs text-slate-400 hover:text-slate-600 transition-colors px-2 py-1"
         >
-          {open ? "Hide" : "Show"}
+          {open ? "Hide alignment" : "Add strategic alignment"}
         </button>
       )}
     </div>
@@ -106,11 +140,18 @@ function ChipGroup({
   options,
   selected,
   onChange,
+  defaultVisible,
+  moreLabel,
+  fewerLabel,
 }: {
   options: string[];
   selected: string[];
   onChange: (values: string[]) => void;
+  defaultVisible?: number;
+  moreLabel?: string;
+  fewerLabel?: string;
 }) {
+  const [showAll, setShowAll] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
 
@@ -129,21 +170,29 @@ function ChipGroup({
     setShowCustom(false);
   }
 
+  const shouldCollapse = !!defaultVisible && !showAll && options.length > defaultVisible;
+  const visibleOptions = shouldCollapse ? options.slice(0, defaultVisible) : options;
+  const hiddenOptions = shouldCollapse ? options.slice(defaultVisible) : [];
+  // Always surface hidden chips that are selected
+  const selectedFromHidden = hiddenOptions.filter((o) => selected.includes(o));
+  const hiddenUnselectedCount = hiddenOptions.filter((o) => !selected.includes(o)).length;
+  const displayedOptions = [...visibleOptions, ...selectedFromHidden];
+
   const customSelected = selected.filter((s) => !options.includes(s));
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {options.map((opt) => {
+      {displayedOptions.map((opt) => {
         const isSelected = selected.includes(opt);
         return (
           <button
             key={opt}
             type="button"
             onClick={() => toggle(opt)}
-            className={`px-3 py-1.5 rounded-full text-sm border transition-all font-medium ${
+            className={`px-3 py-1.5 rounded-full text-sm border transition-all duration-150 font-medium ${
               isSelected
-                ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-600/20"
+                : "bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50/50 hover:text-slate-800"
             }`}
           >
             {isSelected ? `✓ ${opt}` : opt}
@@ -160,6 +209,24 @@ function ChipGroup({
           ✓ {c} ×
         </button>
       ))}
+      {shouldCollapse && hiddenUnselectedCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-blue-300 text-blue-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium"
+        >
+          {moreLabel ?? `+ ${hiddenUnselectedCount} more`}
+        </button>
+      )}
+      {!shouldCollapse && defaultVisible && options.length > defaultVisible && (
+        <button
+          type="button"
+          onClick={() => setShowAll(false)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500 transition-colors"
+        >
+          {fewerLabel ?? "Show less"}
+        </button>
+      )}
       {showCustom ? (
         <div className="flex gap-1.5 items-center">
           <input
@@ -493,11 +560,12 @@ export default function TrackerPage() {
     setTimeout(() => router.push("/dashboard"), 800);
   }
 
-  const card = "bg-white border border-slate-200 rounded-xl p-5";
+  const cardPrimary = "bg-white border border-slate-300 rounded-xl p-5 shadow-md";
+  const card = "bg-white border border-slate-200 rounded-xl p-5 shadow-sm";
   const fieldLabel = "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
-    <div className="max-w-2xl mx-auto space-y-3">
+    <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-lg font-semibold text-slate-900">Capture Impact</h1>
         <a
@@ -508,9 +576,22 @@ export default function TrackerPage() {
         </a>
       </div>
 
+      {/* ── Motivational callout ──────────────────────────────────────────── */}
+      <div className="bg-slate-800 rounded-xl px-5 py-4 flex items-start gap-3.5">
+        <div className="text-blue-400 mt-0.5 shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">You've already done the work.</p>
+          <p className="text-sm text-slate-300 leading-relaxed">Capture the accomplishments, decisions, and contributions that move the business forward before they disappear into the week.</p>
+        </div>
+      </div>
+
       {/* ── Section 1 ─────────────────────────────────────────────────────── */}
-      <div className={card}>
-        <SectionHeader title="What happened?" />
+      <div className={cardPrimary}>
+        <SectionHeader title="Describe the impact" icon={<IconEdit />} />
 
         <div className="space-y-4">
           <div>
@@ -525,8 +606,8 @@ export default function TrackerPage() {
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
               rows={5}
-              placeholder="e.g. Coordinated leadership summit for 60 leaders and redesigned the agenda after strategic priorities shifted two days before the event."
-              className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
+              placeholder={"Examples:\n• Coordinated a leadership summit for 60 leaders\n• Redesigned a reporting process that reduced delays\n• Managed competing priorities during a critical transition"}
+              className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 resize-none leading-relaxed transition-colors"
             />
           </div>
 
@@ -564,6 +645,7 @@ export default function TrackerPage() {
       <div className={card}>
         <SectionHeader
           title="Add Context"
+          icon={<IconUsers />}
           collapsible
           open={section2Open}
           onToggle={() => setSection2Open(!section2Open)}
@@ -572,9 +654,9 @@ export default function TrackerPage() {
         {section2Open && (
           <div className="space-y-4">
             <div>
-              <label className={fieldLabel}>Who benefited?</label>
+              <label className={fieldLabel}>Who did this help?</label>
               <ChipGroup
-                options={WHO_BENEFITED}
+                options={WHO_HELPED}
                 selected={whoBenefited}
                 onChange={setWhoBenefited}
               />
@@ -585,6 +667,9 @@ export default function TrackerPage() {
                 options={CONTRIBUTION_TYPES}
                 selected={contributionTypes}
                 onChange={setContributionTypes}
+                defaultVisible={CONTRIBUTION_TYPES_DEFAULT_VISIBLE}
+                moreLabel="More work types →"
+                fewerLabel="Show fewer work types"
               />
             </div>
             <div>
@@ -593,6 +678,9 @@ export default function TrackerPage() {
                 options={IMPACT_TYPES}
                 selected={impactTypes}
                 onChange={setImpactTypes}
+                defaultVisible={IMPACT_TYPES_DEFAULT_VISIBLE}
+                moreLabel="More impact types →"
+                fewerLabel="Show fewer impact types"
               />
             </div>
             <div>
@@ -616,6 +704,7 @@ export default function TrackerPage() {
       <div className={card}>
         <SectionHeader
           title="Alignment"
+          icon={<IconTarget />}
           collapsible
           open={section3Open}
           onToggle={() => setSection3Open(!section3Open)}
@@ -671,19 +760,29 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* ── Generate ──────────────────────────────────────────────────────── */}
-      <button
-        type="button"
-        onClick={handleGenerate}
-        disabled={loading || !rawInput.trim()}
-        className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-base flex items-center justify-center gap-2 shadow-sm"
-      >
-        {loading ? (
-          <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
-        ) : (
-          <>✦ Generate AI Outputs</>
-        )}
-      </button>
+      {/* ── Actions ───────────────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saved || !rawInput.trim()}
+          className="w-full bg-slate-700 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+        >
+          {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={loading || !rawInput.trim()}
+          className="w-full bg-blue-700 text-white py-3 rounded-xl font-medium hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
+          ) : (
+            <>✦ Generate AI Outputs</>
+          )}
+        </button>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
@@ -783,9 +882,9 @@ export default function TrackerPage() {
             type="button"
             onClick={handleSave}
             disabled={saved}
-            className="w-full bg-slate-900 text-white py-4 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors text-base"
+            className="w-full bg-slate-700 text-white py-4 rounded-xl font-semibold hover:bg-slate-600 disabled:opacity-50 transition-colors text-base"
           >
-            {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
+            {saved ? "✓ Saved to My Impact" : "Save Refined Impact"}
           </button>
         </div>
       )}
