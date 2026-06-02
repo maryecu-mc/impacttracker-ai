@@ -19,7 +19,7 @@ import { PRIMARY_USE_LABELS } from "@/lib/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const WHO_BENEFITED = [
+const WHO_HELPED = [
   "Executive / leadership team",
   "My team",
   "Customer / client",
@@ -30,36 +30,41 @@ const WHO_BENEFITED = [
 ];
 
 const CONTRIBUTION_TYPES = [
-  "Administrative support",
+  "Operational support",
   "Leadership support",
   "Project coordination",
   "Communication",
   "Relationship management",
+  "Problem solving",
   "Process improvement",
   "Event / meeting execution",
   "Strategic support",
-  "Problem solving",
-  "Customer support",
+  "Stakeholder support",
   "Operations",
   "Change management",
 ];
 
+const CONTRIBUTION_TYPES_DEFAULT_VISIBLE = 6;
+
 const IMPACT_TYPES = [
   "Time savings",
   "Cost savings",
-  "Revenue / profitability support",
   "Risk reduction",
+  "Operational efficiency",
+  "Better decision-making",
+  "Strategic alignment",
+  "Revenue / profitability support",
   "Customer experience",
   "Employee experience",
   "Process improvement",
-  "Operational efficiency",
   "Leadership enablement",
   "Culture / engagement",
   "Project execution",
-  "Strategic alignment",
   "Communication effectiveness",
   "Relationship management",
 ];
+
+const IMPACT_TYPES_DEFAULT_VISIBLE = 6;
 
 const OUTPUT_LABELS: Record<keyof RefinedOutputs, string> = {
   accomplishmentStatement: "Accomplishment Statement",
@@ -106,11 +111,14 @@ function ChipGroup({
   options,
   selected,
   onChange,
+  defaultVisible,
 }: {
   options: string[];
   selected: string[];
   onChange: (values: string[]) => void;
+  defaultVisible?: number;
 }) {
+  const [showAll, setShowAll] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
 
@@ -129,11 +137,19 @@ function ChipGroup({
     setShowCustom(false);
   }
 
+  const shouldCollapse = !!defaultVisible && !showAll && options.length > defaultVisible;
+  const visibleOptions = shouldCollapse ? options.slice(0, defaultVisible) : options;
+  const hiddenOptions = shouldCollapse ? options.slice(defaultVisible) : [];
+  // Always surface hidden chips that are selected
+  const selectedFromHidden = hiddenOptions.filter((o) => selected.includes(o));
+  const hiddenUnselectedCount = hiddenOptions.filter((o) => !selected.includes(o)).length;
+  const displayedOptions = [...visibleOptions, ...selectedFromHidden];
+
   const customSelected = selected.filter((s) => !options.includes(s));
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {options.map((opt) => {
+      {displayedOptions.map((opt) => {
         const isSelected = selected.includes(opt);
         return (
           <button
@@ -160,6 +176,24 @@ function ChipGroup({
           ✓ {c} ×
         </button>
       ))}
+      {shouldCollapse && hiddenUnselectedCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-blue-300 text-blue-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium"
+        >
+          + {hiddenUnselectedCount} more
+        </button>
+      )}
+      {!shouldCollapse && defaultVisible && options.length > defaultVisible && (
+        <button
+          type="button"
+          onClick={() => setShowAll(false)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500 transition-colors"
+        >
+          Show less
+        </button>
+      )}
       {showCustom ? (
         <div className="flex gap-1.5 items-center">
           <input
@@ -572,9 +606,9 @@ export default function TrackerPage() {
         {section2Open && (
           <div className="space-y-4">
             <div>
-              <label className={fieldLabel}>Who benefited?</label>
+              <label className={fieldLabel}>Who did this help?</label>
               <ChipGroup
-                options={WHO_BENEFITED}
+                options={WHO_HELPED}
                 selected={whoBenefited}
                 onChange={setWhoBenefited}
               />
@@ -585,6 +619,7 @@ export default function TrackerPage() {
                 options={CONTRIBUTION_TYPES}
                 selected={contributionTypes}
                 onChange={setContributionTypes}
+                defaultVisible={CONTRIBUTION_TYPES_DEFAULT_VISIBLE}
               />
             </div>
             <div>
@@ -593,6 +628,7 @@ export default function TrackerPage() {
                 options={IMPACT_TYPES}
                 selected={impactTypes}
                 onChange={setImpactTypes}
+                defaultVisible={IMPACT_TYPES_DEFAULT_VISIBLE}
               />
             </div>
             <div>

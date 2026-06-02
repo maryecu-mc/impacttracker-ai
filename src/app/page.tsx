@@ -24,6 +24,10 @@ export default function Home() {
           Track accomplishments, connect them to business value, and turn
           everyday work into language that lands.
         </p>
+        <p className="text-sm text-slate-400 mt-3 leading-relaxed italic">
+          Built for the work that rarely makes it into the update, but
+          absolutely moves the business forward.
+        </p>
       </div>
 
       <div className="flex gap-3">
