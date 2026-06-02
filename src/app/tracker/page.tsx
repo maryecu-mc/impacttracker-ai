@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveEntry,
@@ -76,22 +76,51 @@ const OUTPUT_LABELS: Record<keyof RefinedOutputs, string> = {
   starFormat: "STAR Format",
 };
 
+// ─── Icons ───────────────────────────────────────────────────────────────────
+
+const IconEdit = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+const IconUsers = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
+
+const IconTarget = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+    <circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="12" r="6"/>
+    <circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionHeader({
   title,
+  icon,
   collapsible = false,
   open,
   onToggle,
 }: {
   title: string;
+  icon?: React.ReactNode;
   collapsible?: boolean;
   open?: boolean;
   onToggle?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="text-sm font-semibold text-slate-800 border-l-2 border-blue-500 pl-3 leading-tight">
+      <h2 className="text-sm font-semibold text-slate-800 border-l-2 border-blue-500 pl-3 leading-tight flex items-center gap-2">
+        {icon && <span className="inline-flex items-center">{icon}</span>}
         {title}
       </h2>
       {collapsible && onToggle && (
@@ -160,10 +189,10 @@ function ChipGroup({
             key={opt}
             type="button"
             onClick={() => toggle(opt)}
-            className={`px-3 py-1.5 rounded-full text-sm border transition-all font-medium ${
+            className={`px-3 py-1.5 rounded-full text-sm border transition-all duration-150 font-medium ${
               isSelected
-                ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-600/20"
+                : "bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50/50 hover:text-slate-800"
             }`}
           >
             {isSelected ? `✓ ${opt}` : opt}
@@ -531,11 +560,12 @@ export default function TrackerPage() {
     setTimeout(() => router.push("/dashboard"), 800);
   }
 
-  const card = "bg-white border border-slate-200 rounded-xl p-5";
+  const cardPrimary = "bg-white border border-slate-300 rounded-xl p-5 shadow-md";
+  const card = "bg-white border border-slate-200 rounded-xl p-5 shadow-sm";
   const fieldLabel = "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
-    <div className="max-w-2xl mx-auto space-y-3">
+    <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-lg font-semibold text-slate-900">Capture Impact</h1>
         <a
@@ -546,9 +576,22 @@ export default function TrackerPage() {
         </a>
       </div>
 
+      {/* ── Motivational callout ──────────────────────────────────────────── */}
+      <div className="bg-slate-800 rounded-xl px-5 py-4 flex items-start gap-3.5">
+        <div className="text-blue-400 mt-0.5 shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">You've already done the work.</p>
+          <p className="text-sm text-slate-300 leading-relaxed">Capture the accomplishments, decisions, and contributions that move the business forward before they disappear into the week.</p>
+        </div>
+      </div>
+
       {/* ── Section 1 ─────────────────────────────────────────────────────── */}
-      <div className={card}>
-        <SectionHeader title="Describe the impact" />
+      <div className={cardPrimary}>
+        <SectionHeader title="Describe the impact" icon={<IconEdit />} />
 
         <div className="space-y-4">
           <div>
@@ -564,7 +607,7 @@ export default function TrackerPage() {
               onChange={(e) => setRawInput(e.target.value)}
               rows={5}
               placeholder={"Examples:\n• Coordinated a leadership summit for 60 leaders\n• Redesigned a reporting process that reduced delays\n• Managed competing priorities during a critical transition"}
-              className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
+              className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 resize-none leading-relaxed transition-colors"
             />
           </div>
 
@@ -602,6 +645,7 @@ export default function TrackerPage() {
       <div className={card}>
         <SectionHeader
           title="Add Context"
+          icon={<IconUsers />}
           collapsible
           open={section2Open}
           onToggle={() => setSection2Open(!section2Open)}
@@ -660,6 +704,7 @@ export default function TrackerPage() {
       <div className={card}>
         <SectionHeader
           title="Alignment"
+          icon={<IconTarget />}
           collapsible
           open={section3Open}
           onToggle={() => setSection3Open(!section3Open)}
