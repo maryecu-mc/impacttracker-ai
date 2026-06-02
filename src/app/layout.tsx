@@ -12,10 +12,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://impacttracker.maryecurry.com";
+
 export const metadata: Metadata = {
-  title: "Impact Tracker",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Impact Tracker",
+    template: "%s | Impact Tracker",
+  },
   description:
-    "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+    "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands in reviews, updates, and career conversations.",
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Impact Tracker",
+    title: "Impact Tracker",
+    description:
+      "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Impact Tracker",
+    description:
+      "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
