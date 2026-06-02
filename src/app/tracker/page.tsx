@@ -19,7 +19,7 @@ import { PRIMARY_USE_LABELS } from "@/lib/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const WHO_BENEFITED = [
+const WHO_HELPED = [
   "Executive / leadership team",
   "My team",
   "Customer / client",
@@ -30,36 +30,41 @@ const WHO_BENEFITED = [
 ];
 
 const CONTRIBUTION_TYPES = [
-  "Administrative support",
+  "Operational support",
   "Leadership support",
   "Project coordination",
   "Communication",
   "Relationship management",
+  "Problem solving",
   "Process improvement",
   "Event / meeting execution",
   "Strategic support",
-  "Problem solving",
-  "Customer support",
+  "Stakeholder support",
   "Operations",
   "Change management",
 ];
 
+const CONTRIBUTION_TYPES_DEFAULT_VISIBLE = 6;
+
 const IMPACT_TYPES = [
   "Time savings",
   "Cost savings",
-  "Revenue / profitability support",
   "Risk reduction",
+  "Operational efficiency",
+  "Better decision-making",
+  "Strategic alignment",
+  "Revenue / profitability support",
   "Customer experience",
   "Employee experience",
   "Process improvement",
-  "Operational efficiency",
   "Leadership enablement",
   "Culture / engagement",
   "Project execution",
-  "Strategic alignment",
   "Communication effectiveness",
   "Relationship management",
 ];
+
+const IMPACT_TYPES_DEFAULT_VISIBLE = 6;
 
 const OUTPUT_LABELS: Record<keyof RefinedOutputs, string> = {
   accomplishmentStatement: "Accomplishment Statement",
@@ -95,7 +100,7 @@ function SectionHeader({
           onClick={onToggle}
           className="text-xs text-slate-400 hover:text-slate-600 transition-colors px-2 py-1"
         >
-          {open ? "Hide" : "Show"}
+          {open ? "Hide alignment" : "Add strategic alignment"}
         </button>
       )}
     </div>
@@ -106,11 +111,18 @@ function ChipGroup({
   options,
   selected,
   onChange,
+  defaultVisible,
+  moreLabel,
+  fewerLabel,
 }: {
   options: string[];
   selected: string[];
   onChange: (values: string[]) => void;
+  defaultVisible?: number;
+  moreLabel?: string;
+  fewerLabel?: string;
 }) {
+  const [showAll, setShowAll] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
 
@@ -129,11 +141,19 @@ function ChipGroup({
     setShowCustom(false);
   }
 
+  const shouldCollapse = !!defaultVisible && !showAll && options.length > defaultVisible;
+  const visibleOptions = shouldCollapse ? options.slice(0, defaultVisible) : options;
+  const hiddenOptions = shouldCollapse ? options.slice(defaultVisible) : [];
+  // Always surface hidden chips that are selected
+  const selectedFromHidden = hiddenOptions.filter((o) => selected.includes(o));
+  const hiddenUnselectedCount = hiddenOptions.filter((o) => !selected.includes(o)).length;
+  const displayedOptions = [...visibleOptions, ...selectedFromHidden];
+
   const customSelected = selected.filter((s) => !options.includes(s));
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {options.map((opt) => {
+      {displayedOptions.map((opt) => {
         const isSelected = selected.includes(opt);
         return (
           <button
@@ -160,6 +180,24 @@ function ChipGroup({
           ✓ {c} ×
         </button>
       ))}
+      {shouldCollapse && hiddenUnselectedCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-blue-300 text-blue-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium"
+        >
+          {moreLabel ?? `+ ${hiddenUnselectedCount} more`}
+        </button>
+      )}
+      {!shouldCollapse && defaultVisible && options.length > defaultVisible && (
+        <button
+          type="button"
+          onClick={() => setShowAll(false)}
+          className="px-3 py-1.5 rounded-full text-sm border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500 transition-colors"
+        >
+          {fewerLabel ?? "Show less"}
+        </button>
+      )}
       {showCustom ? (
         <div className="flex gap-1.5 items-center">
           <input
@@ -510,7 +548,7 @@ export default function TrackerPage() {
 
       {/* ── Section 1 ─────────────────────────────────────────────────────── */}
       <div className={card}>
-        <SectionHeader title="What happened?" />
+        <SectionHeader title="Describe the impact" />
 
         <div className="space-y-4">
           <div>
@@ -525,7 +563,7 @@ export default function TrackerPage() {
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
               rows={5}
-              placeholder="e.g. Coordinated leadership summit for 60 leaders and redesigned the agenda after strategic priorities shifted two days before the event."
+              placeholder={"Examples:\n• Coordinated a leadership summit for 60 leaders\n• Redesigned a reporting process that reduced delays\n• Managed competing priorities during a critical transition"}
               className="w-full border border-slate-200 rounded-lg px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
             />
           </div>
@@ -572,9 +610,9 @@ export default function TrackerPage() {
         {section2Open && (
           <div className="space-y-4">
             <div>
-              <label className={fieldLabel}>Who benefited?</label>
+              <label className={fieldLabel}>Who did this help?</label>
               <ChipGroup
-                options={WHO_BENEFITED}
+                options={WHO_HELPED}
                 selected={whoBenefited}
                 onChange={setWhoBenefited}
               />
@@ -585,6 +623,9 @@ export default function TrackerPage() {
                 options={CONTRIBUTION_TYPES}
                 selected={contributionTypes}
                 onChange={setContributionTypes}
+                defaultVisible={CONTRIBUTION_TYPES_DEFAULT_VISIBLE}
+                moreLabel="More work types →"
+                fewerLabel="Show fewer work types"
               />
             </div>
             <div>
@@ -593,6 +634,9 @@ export default function TrackerPage() {
                 options={IMPACT_TYPES}
                 selected={impactTypes}
                 onChange={setImpactTypes}
+                defaultVisible={IMPACT_TYPES_DEFAULT_VISIBLE}
+                moreLabel="More impact types →"
+                fewerLabel="Show fewer impact types"
               />
             </div>
             <div>
@@ -671,19 +715,29 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* ── Generate ──────────────────────────────────────────────────────── */}
-      <button
-        type="button"
-        onClick={handleGenerate}
-        disabled={loading || !rawInput.trim()}
-        className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-base flex items-center justify-center gap-2 shadow-sm"
-      >
-        {loading ? (
-          <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
-        ) : (
-          <>✦ Generate AI Outputs</>
-        )}
-      </button>
+      {/* ── Actions ───────────────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saved || !rawInput.trim()}
+          className="w-full bg-slate-700 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+        >
+          {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={loading || !rawInput.trim()}
+          className="w-full bg-blue-700 text-white py-3 rounded-xl font-medium hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <><span className="animate-spin inline-block">✦</span> Generating AI Outputs…</>
+          ) : (
+            <>✦ Generate AI Outputs</>
+          )}
+        </button>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
@@ -783,9 +837,9 @@ export default function TrackerPage() {
             type="button"
             onClick={handleSave}
             disabled={saved}
-            className="w-full bg-slate-900 text-white py-4 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors text-base"
+            className="w-full bg-slate-700 text-white py-4 rounded-xl font-semibold hover:bg-slate-600 disabled:opacity-50 transition-colors text-base"
           >
-            {saved ? "✓ Saved to My Impact" : "Save to My Impact"}
+            {saved ? "✓ Saved to My Impact" : "Save Refined Impact"}
           </button>
         </div>
       )}
