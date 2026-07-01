@@ -11,11 +11,15 @@ function SignInForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorDetail, setErrorDetail] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [debugInfo, setDebugInfo] = useState<{
     configOk: boolean;
+    supabaseUrl: string;
     supabaseHost: string;
     keyPrefix: string;
+    keyType: string;
     redirectUrl: string;
+    authEndpoint: string;
   } | null>(null);
 
   const searchParams = useSearchParams();
@@ -24,19 +28,38 @@ function SignInForm() {
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
     const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+
     let supabaseHost = "(not set)";
+    let authEndpoint = "(unknown)";
     try {
-      if (supabaseUrl) supabaseHost = new URL(supabaseUrl).host;
+      if (supabaseUrl) {
+        const base = new URL(supabaseUrl.endsWith("/") ? supabaseUrl : supabaseUrl + "/");
+        supabaseHost = base.host;
+        authEndpoint = new URL("auth/v1/otp", base).href;
+      }
     } catch {
-      supabaseHost = "(invalid URL)";
+      supabaseHost = "(malformed URL)";
     }
-    const keyPrefix = key ? key.slice(0, 20) + "…" : "(not set)";
+
+    const keyPrefix = key ? key.slice(0, 24) + "…" : "(not set)";
+    const keyType = key.startsWith("sb_publishable_")
+      ? "sb_publishable_ (new format)"
+      : key.startsWith("eyJ")
+      ? "eyJ… (legacy JWT anon key)"
+      : key
+      ? "⚠ unrecognised format"
+      : "(not set)";
+
     const redirectUrl = `${window.location.origin}/auth/callback`;
+
     setDebugInfo({
       configOk: !!supabaseUrl && !!key,
+      supabaseUrl,
       supabaseHost,
       keyPrefix,
+      keyType,
       redirectUrl,
+      authEndpoint,
     });
   }, []);
 
@@ -53,31 +76,30 @@ function SignInForm() {
     if (!email.trim()) return;
     setStatus("sending");
     setErrorDetail("");
+    setErrorStatus(null);
 
-    // emailRedirectTo must be the bare callback URL — no query params —
-    // so it matches exactly what is whitelisted in Supabase Redirect URLs.
     const redirectTo = `${window.location.origin}/auth/callback`;
-    console.log("[auth] signInWithOtp call", { email: email.trim(), redirectTo });
+    console.log("[auth] signInWithOtp →", { email: email.trim(), redirectTo });
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: {
-        emailRedirectTo: redirectTo,
-      },
+      options: { emailRedirectTo: redirectTo },
     });
 
     if (error) {
-      // Log the full error object for debugging (no key values present)
+      const status = "status" in error ? (error as { status?: number }).status ?? null : null;
       console.error("[auth] signInWithOtp error", {
         message: error.message,
-        status: error.status,
         name: error.name,
+        status,
+        redirectTo,
       });
       setErrorDetail(error.message);
+      setErrorStatus(status);
       setStatus("error");
     } else {
-      console.log("[auth] signInWithOtp success — check email");
+      console.log("[auth] signInWithOtp success — magic link sent");
       setStatus("sent");
     }
   }
@@ -148,7 +170,7 @@ function SignInForm() {
             </p>
             <button
               type="button"
-              onClick={() => { setStatus("idle"); setErrorDetail(""); }}
+              onClick={() => { setStatus("idle"); setErrorDetail(""); setErrorStatus(null); }}
               className="mt-4 text-xs text-blue-600 hover:underline"
             >
               Use a different email
@@ -168,10 +190,11 @@ function SignInForm() {
               />
             </div>
             {status === "error" && (
-              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700 space-y-1">
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700 space-y-1.5">
                 <p className="font-semibold">Sign-in failed</p>
                 {errorDetail && <p className="font-mono break-all">{errorDetail}</p>}
-                <p className="text-red-500 mt-1">Check browser console (F12) for full error details.</p>
+                {errorStatus && <p className="text-red-500">HTTP status: {errorStatus}</p>}
+                <p className="text-red-500">See browser console (F12) for full error details.</p>
               </div>
             )}
             <button
@@ -189,7 +212,7 @@ function SignInForm() {
         No password needed. We&apos;ll email you a sign-in link.
       </p>
 
-      {/* Debug panel — always visible to help diagnose auth issues */}
+      {/* Full debug panel */}
       {debugInfo && (
         <div className="mt-4 bg-slate-100 border border-slate-200 rounded-lg px-3 py-3 text-xs text-slate-600 space-y-1.5">
           <p className="font-semibold text-slate-700 mb-1">Auth debug</p>
@@ -200,8 +223,12 @@ function SignInForm() {
             </span>
           </p>
           <p>
-            <span className="text-slate-500">Supabase host:</span>{" "}
-            <span className="font-mono">{debugInfo.supabaseHost}</span>
+            <span className="text-slate-500">Supabase URL:</span>{" "}
+            <span className="font-mono break-all">{debugInfo.supabaseUrl || "(not set)"}</span>
+          </p>
+          <p>
+            <span className="text-slate-500">Auth endpoint:</span>{" "}
+            <span className="font-mono break-all">{debugInfo.authEndpoint}</span>
           </p>
           <p>
             <span className="text-slate-500">Key prefix:</span>{" "}
@@ -209,22 +236,20 @@ function SignInForm() {
           </p>
           <p>
             <span className="text-slate-500">Key type:</span>{" "}
-            <span className="font-mono">
-              {debugInfo.keyPrefix.startsWith("sb_publishable_")
-                ? "✓ sb_publishable_ (new format)"
-                : debugInfo.keyPrefix.startsWith("eyJ")
-                ? "✓ JWT (legacy anon key)"
-                : "⚠ unrecognised format"}
-            </span>
+            <span className="font-mono">{debugInfo.keyType}</span>
           </p>
-          <p>
-            <span className="text-slate-500">emailRedirectTo:</span>{" "}
-            <span className="font-mono break-all">{debugInfo.redirectUrl}</span>
-          </p>
-          <p className="text-slate-400 pt-1">
-            The redirect URL above must appear in<br />
-            Supabase → Auth → URL Configuration → Redirect URLs
-          </p>
+          <div className="pt-1 border-t border-slate-200">
+            <p className="font-semibold text-slate-700 mb-1">Redirect URL sent to Supabase:</p>
+            <p className="font-mono break-all bg-white border border-slate-200 rounded px-2 py-1">{debugInfo.redirectUrl}</p>
+            <p className="mt-1.5 text-slate-500">
+              ⚠ This exact URL must be in{" "}
+              <strong>Supabase → Auth → URL Configuration → Redirect URLs</strong>.
+              Vercel preview URLs change on every push — add a wildcard instead:
+            </p>
+            <p className="font-mono mt-1 break-all bg-white border border-slate-200 rounded px-2 py-1">
+              https://*-maryecu-mcs-projects.vercel.app/auth/callback
+            </p>
+          </div>
         </div>
       )}
     </div>
