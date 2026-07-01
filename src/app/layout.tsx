@@ -12,10 +12,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://impacttracker.maryecurry.com";
+
 export const metadata: Metadata = {
-  title: "Impact Tracker",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Impact Tracker",
+    template: "%s | Impact Tracker",
+  },
   description:
-    "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+    "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands in reviews, updates, and career conversations.",
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Impact Tracker",
+    title: "Impact Tracker",
+    description:
+      "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Impact Tracker",
+    description:
+      "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -26,25 +53,26 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 min-h-screen`}
       >
-        <nav className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <nav className="bg-slate-700 shadow-md sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <a
               href="/"
-              className="flex items-center gap-2 text-slate-900 font-semibold text-base"
+              className="flex items-center gap-2 text-white font-semibold text-base tracking-tight"
             >
-              <span className="text-blue-600 text-lg">◆</span>
-              Impact Tracker
+              <span className="text-blue-400 text-sm leading-none opacity-80">◆</span>
+              <span>Impact Tracker</span>
+              <span className="text-blue-400 text-sm leading-none opacity-80">◆</span>
             </a>
             <div className="flex items-center gap-6">
               <a
                 href="/dashboard"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                className="text-sm text-slate-300 hover:text-white transition-colors"
               >
                 My Impact
               </a>
               <a
                 href="/tracker"
-                className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-500 transition-colors"
               >
                 Capture Impact
               </a>
