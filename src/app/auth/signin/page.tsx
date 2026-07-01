@@ -4,55 +4,85 @@ import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 
-// Set to true once Google OAuth is configured in Supabase
-// (Authentication → Providers → Google → add Client ID + Secret)
+// Set to true once Google OAuth credentials are added in Supabase Auth → Providers → Google
 const GOOGLE_OAUTH_ENABLED = false;
 
 function SignInForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorDetail, setErrorDetail] = useState("");
-  const [configOk, setConfigOk] = useState<boolean | null>(null);
-  const [redirectUrl, setRedirectUrl] = useState("");
+  const [debugInfo, setDebugInfo] = useState<{
+    configOk: boolean;
+    supabaseHost: string;
+    keyPrefix: string;
+    redirectUrl: string;
+  } | null>(null);
+
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
-  const next = searchParams.get("next") ?? "/dashboard";
 
-  // Check env vars and compute redirect URL (no key values shown)
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-    setConfigOk(!!url && !!key);
-    setRedirectUrl(`${window.location.origin}/auth/callback`);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+    let supabaseHost = "(not set)";
+    try {
+      if (supabaseUrl) supabaseHost = new URL(supabaseUrl).host;
+    } catch {
+      supabaseHost = "(invalid URL)";
+    }
+    const keyPrefix = key ? key.slice(0, 20) + "…" : "(not set)";
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    setDebugInfo({
+      configOk: !!supabaseUrl && !!key,
+      supabaseHost,
+      keyPrefix,
+      redirectUrl,
+    });
   }, []);
 
   // Redirect if already signed in
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.href = next;
+      if (data.session) window.location.href = "/dashboard";
     });
-  }, [next]);
+  }, []);
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
     setStatus("sending");
     setErrorDetail("");
+
+    // emailRedirectTo must be the bare callback URL — no query params —
+    // so it matches exactly what is whitelisted in Supabase Redirect URLs.
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    console.log("[auth] signInWithOtp call", { email: email.trim(), redirectTo });
+
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: redirectTo,
       },
     });
+
     if (error) {
+      // Log the full error object for debugging (no key values present)
+      console.error("[auth] signInWithOtp error", {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+      });
       setErrorDetail(error.message);
       setStatus("error");
     } else {
+      console.log("[auth] signInWithOtp success — check email");
       setStatus("sent");
     }
   }
+
+  const configOk = debugInfo?.configOk ?? null;
 
   return (
     <div className="max-w-sm mx-auto pt-16">
@@ -62,15 +92,13 @@ function SignInForm() {
         <p className="text-sm text-slate-500">Save your accomplishments and access them anywhere.</p>
       </div>
 
-      {/* Env var debug indicator — only visible if config is missing */}
       {configOk === false && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 mb-6">
           <p className="font-semibold mb-1">Configuration error</p>
           <p>
-            Supabase environment variables are not set. Check that{" "}
-            <code className="bg-red-100 px-1 rounded font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+            <code className="bg-red-100 px-1 rounded font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> or{" "}
             <code className="bg-red-100 px-1 rounded font-mono text-xs">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>{" "}
-            are set in Vercel and that the deployment was triggered after adding them.
+            is missing. Check Vercel environment variables and redeploy.
           </p>
         </div>
       )}
@@ -82,7 +110,6 @@ function SignInForm() {
       )}
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-        {/* Google OAuth — hidden until configured in Supabase */}
         {GOOGLE_OAUTH_ENABLED && (
           <>
             <button
@@ -91,9 +118,7 @@ function SignInForm() {
                 const supabase = createClient();
                 await supabase.auth.signInWithOAuth({
                   provider: "google",
-                  options: {
-                    redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-                  },
+                  options: { redirectTo: `${window.location.origin}/auth/callback` },
                 });
               }}
               className="w-full flex items-center justify-center gap-3 border border-slate-300 rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
@@ -114,7 +139,6 @@ function SignInForm() {
           </>
         )}
 
-        {/* Magic link */}
         {status === "sent" ? (
           <div className="text-center py-4">
             <div className="text-2xl mb-2">✉️</div>
@@ -133,9 +157,7 @@ function SignInForm() {
         ) : (
           <form onSubmit={handleMagicLink} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Email address
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
               <input
                 type="email"
                 value={email}
@@ -149,6 +171,7 @@ function SignInForm() {
               <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700 space-y-1">
                 <p className="font-semibold">Sign-in failed</p>
                 {errorDetail && <p className="font-mono break-all">{errorDetail}</p>}
+                <p className="text-red-500 mt-1">Check browser console (F12) for full error details.</p>
               </div>
             )}
             <button
@@ -166,22 +189,42 @@ function SignInForm() {
         No password needed. We&apos;ll email you a sign-in link.
       </p>
 
-      {/* Config + redirect URL — shown for debugging */}
-      {configOk !== null && (
-        <div className="mt-4 space-y-2 text-center">
-          <p className="text-xs" style={{ color: configOk ? "#16a34a" : "#dc2626" }}>
-            {configOk ? "✓ Supabase config present" : "✗ Supabase config missing"}
+      {/* Debug panel — always visible to help diagnose auth issues */}
+      {debugInfo && (
+        <div className="mt-4 bg-slate-100 border border-slate-200 rounded-lg px-3 py-3 text-xs text-slate-600 space-y-1.5">
+          <p className="font-semibold text-slate-700 mb-1">Auth debug</p>
+          <p>
+            <span className="text-slate-500">Config:</span>{" "}
+            <span style={{ color: debugInfo.configOk ? "#16a34a" : "#dc2626" }}>
+              {debugInfo.configOk ? "✓ present" : "✗ missing"}
+            </span>
           </p>
-          {redirectUrl && (
-            <div className="text-left bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-600">
-              <p className="font-semibold text-slate-700 mb-1">Redirect URL being used:</p>
-              <p className="font-mono break-all">{redirectUrl}</p>
-              <p className="mt-1.5 text-slate-500">
-                This URL must be added to{" "}
-                <strong>Supabase → Authentication → URL Configuration → Redirect URLs</strong>.
-              </p>
-            </div>
-          )}
+          <p>
+            <span className="text-slate-500">Supabase host:</span>{" "}
+            <span className="font-mono">{debugInfo.supabaseHost}</span>
+          </p>
+          <p>
+            <span className="text-slate-500">Key prefix:</span>{" "}
+            <span className="font-mono">{debugInfo.keyPrefix}</span>
+          </p>
+          <p>
+            <span className="text-slate-500">Key type:</span>{" "}
+            <span className="font-mono">
+              {debugInfo.keyPrefix.startsWith("sb_publishable_")
+                ? "✓ sb_publishable_ (new format)"
+                : debugInfo.keyPrefix.startsWith("eyJ")
+                ? "✓ JWT (legacy anon key)"
+                : "⚠ unrecognised format"}
+            </span>
+          </p>
+          <p>
+            <span className="text-slate-500">emailRedirectTo:</span>{" "}
+            <span className="font-mono break-all">{debugInfo.redirectUrl}</span>
+          </p>
+          <p className="text-slate-400 pt-1">
+            The redirect URL above must appear in<br />
+            Supabase → Auth → URL Configuration → Redirect URLs
+          </p>
         </div>
       )}
     </div>
