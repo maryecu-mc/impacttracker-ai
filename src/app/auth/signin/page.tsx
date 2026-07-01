@@ -13,15 +13,17 @@ function SignInForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorDetail, setErrorDetail] = useState("");
   const [configOk, setConfigOk] = useState<boolean | null>(null);
+  const [redirectUrl, setRedirectUrl] = useState("");
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
   const next = searchParams.get("next") ?? "/dashboard";
 
-  // Check env vars are present (values not shown)
+  // Check env vars and compute redirect URL (no key values shown)
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
     setConfigOk(!!url && !!key);
+    setRedirectUrl(`${window.location.origin}/auth/callback`);
   }, []);
 
   // Redirect if already signed in
@@ -164,11 +166,23 @@ function SignInForm() {
         No password needed. We&apos;ll email you a sign-in link.
       </p>
 
-      {/* Config status — visible for debugging, harmless in production */}
+      {/* Config + redirect URL — shown for debugging */}
       {configOk !== null && (
-        <p className="text-center text-xs mt-4" style={{ color: configOk ? "#16a34a" : "#dc2626" }}>
-          {configOk ? "✓ Supabase config present" : "✗ Supabase config missing"}
-        </p>
+        <div className="mt-4 space-y-2 text-center">
+          <p className="text-xs" style={{ color: configOk ? "#16a34a" : "#dc2626" }}>
+            {configOk ? "✓ Supabase config present" : "✗ Supabase config missing"}
+          </p>
+          {redirectUrl && (
+            <div className="text-left bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-600">
+              <p className="font-semibold text-slate-700 mb-1">Redirect URL being used:</p>
+              <p className="font-mono break-all">{redirectUrl}</p>
+              <p className="mt-1.5 text-slate-500">
+                This URL must be added to{" "}
+                <strong>Supabase → Authentication → URL Configuration → Redirect URLs</strong>.
+              </p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
