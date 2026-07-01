@@ -15,18 +15,16 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center gap-6">
       <div className="max-w-2xl">
-        <h1 className="text-4xl font-bold text-slate-900 mb-3 leading-tight tracking-tight">
-          Capture the impact
+        <h1 className="text-4xl font-bold text-slate-900 mb-4 leading-tight tracking-tight">
+          Capture the value of your work
           <br />
-          of your work.
+          before it gets forgotten.
         </h1>
         <p className="text-lg text-slate-500 leading-relaxed">
-          Track accomplishments, connect them to business value, and turn
-          everyday work into language that lands.
-        </p>
-        <p className="text-sm text-slate-400 mt-3 leading-relaxed italic">
-          Because the work that matters most is often the work we forget at
-          review time.
+          Capture accomplishments, contributions, and business impact.
+          <br />
+          Let AI turn everyday work into language that lands in reviews,
+          updates, decks, and conversations.
         </p>
       </div>
 
