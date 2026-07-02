@@ -16,6 +16,7 @@ function SignInForm() {
     configOk: boolean;
     supabaseUrl: string;
     supabaseHost: string;
+    isPlaceholder: boolean;
     keyPrefix: string;
     keyType: string;
     redirectUrl: string;
@@ -52,10 +53,16 @@ function SignInForm() {
 
     const redirectUrl = `${window.location.origin}/auth/callback`;
 
+    const isPlaceholder =
+      !supabaseUrl ||
+      supabaseUrl.includes("your-project-id") ||
+      supabaseUrl.includes("example.supabase.co");
+
     setDebugInfo({
-      configOk: !!supabaseUrl && !!key,
+      configOk: !!supabaseUrl && !!key && !isPlaceholder,
       supabaseUrl,
       supabaseHost,
+      isPlaceholder,
       keyPrefix,
       keyType,
       redirectUrl,
@@ -114,7 +121,20 @@ function SignInForm() {
         <p className="text-sm text-slate-500">Save your accomplishments and access them anywhere.</p>
       </div>
 
-      {configOk === false && (
+      {debugInfo?.isPlaceholder && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 mb-6">
+          <p className="font-semibold mb-1">NEXT_PUBLIC_SUPABASE_URL is a placeholder</p>
+          <p className="mb-1">
+            The app is using <code className="bg-red-100 px-1 rounded font-mono text-xs break-all">{debugInfo.supabaseUrl || "(empty)"}</code> — this is not a real Supabase project URL.
+          </p>
+          <p>
+            In Vercel → Settings → Environment Variables, set{" "}
+            <code className="bg-red-100 px-1 rounded font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> to your
+            real project URL (e.g. <code className="bg-red-100 px-1 rounded font-mono text-xs">https://abcdefgh.supabase.co</code>), then redeploy.
+          </p>
+        </div>
+      )}
+      {configOk === false && !debugInfo?.isPlaceholder && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 mb-6">
           <p className="font-semibold mb-1">Configuration error</p>
           <p>
@@ -219,12 +239,19 @@ function SignInForm() {
           <p>
             <span className="text-slate-500">Config:</span>{" "}
             <span style={{ color: debugInfo.configOk ? "#16a34a" : "#dc2626" }}>
-              {debugInfo.configOk ? "✓ present" : "✗ missing"}
+              {debugInfo.configOk ? "✓ OK" : debugInfo.isPlaceholder ? "✗ placeholder URL" : "✗ missing"}
             </span>
           </p>
           <p>
-            <span className="text-slate-500">Supabase URL:</span>{" "}
-            <span className="font-mono break-all">{debugInfo.supabaseUrl || "(not set)"}</span>
+            <span className="text-slate-500">Raw NEXT_PUBLIC_SUPABASE_URL:</span>{" "}
+            <span className={`font-mono break-all ${debugInfo.isPlaceholder ? "text-red-600 font-semibold" : ""}`}>
+              {debugInfo.supabaseUrl || "(not set)"}
+            </span>
+            {debugInfo.isPlaceholder && <span className="text-red-600"> ← PLACEHOLDER, not a real project</span>}
+          </p>
+          <p>
+            <span className="text-slate-500">Supabase host (extracted):</span>{" "}
+            <span className="font-mono break-all">{debugInfo.supabaseHost}</span>
           </p>
           <p>
             <span className="text-slate-500">Auth endpoint:</span>{" "}
