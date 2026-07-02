@@ -121,7 +121,7 @@ function SignInForm() {
                 <p className="font-semibold">Sign-in failed</p>
                 <p>
                   {errorDetail?.toLowerCase().includes("rate limit")
-                    ? "Too many sign-in emails were requested. Please wait a little while and try again."
+                    ? "Too many sign-in emails have been requested. Please wait a little while and try again."
                     : errorDetail || "Something went wrong. Please try again."}
                 </p>
               </div>
