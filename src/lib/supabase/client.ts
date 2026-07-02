@@ -19,13 +19,8 @@ function getSupabaseUrl(): string {
 }
 
 export function createClient() {
-  const supabaseUrl = getSupabaseUrl();
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-
-  if (typeof window !== "undefined") {
-    console.log("[supabase/client] URL:", supabaseUrl);
-    console.log("[supabase/client] auth endpoint will be:", supabaseUrl + "/auth/v1/otp");
-  }
-
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  return createBrowserClient(
+    getSupabaseUrl(),
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+  );
 }
