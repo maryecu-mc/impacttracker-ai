@@ -7,68 +7,27 @@ import { useSearchParams } from "next/navigation";
 // Set to true once Google OAuth credentials are added in Supabase Auth → Providers → Google
 const GOOGLE_OAUTH_ENABLED = false;
 
+// Captured at build time by Next.js / Vercel
+const BUILD_COMMIT = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
+const BUILD_URL = process.env.NEXT_PUBLIC_VERCEL_URL ?? "(local)";
+const RAW_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const RAW_SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+
 function SignInForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorDetail, setErrorDetail] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [debugInfo, setDebugInfo] = useState<{
-    configOk: boolean;
-    supabaseUrl: string;
-    supabaseHost: string;
-    isPlaceholder: boolean;
-    keyPrefix: string;
-    keyType: string;
-    redirectUrl: string;
-    authEndpoint: string;
+  const [probeResult, setProbeResult] = useState<{
+    url: string;
+    ok: boolean;
+    httpStatus: number | null;
+    body: string;
   } | null>(null);
+  const [probing, setProbing] = useState(false);
 
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
-
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
-
-    let supabaseHost = "(not set)";
-    let authEndpoint = "(unknown)";
-    try {
-      if (supabaseUrl) {
-        const base = new URL(supabaseUrl.endsWith("/") ? supabaseUrl : supabaseUrl + "/");
-        supabaseHost = base.host;
-        authEndpoint = new URL("auth/v1/otp", base).href;
-      }
-    } catch {
-      supabaseHost = "(malformed URL)";
-    }
-
-    const keyPrefix = key ? key.slice(0, 24) + "…" : "(not set)";
-    const keyType = key.startsWith("sb_publishable_")
-      ? "sb_publishable_ (new format)"
-      : key.startsWith("eyJ")
-      ? "eyJ… (legacy JWT anon key)"
-      : key
-      ? "⚠ unrecognised format"
-      : "(not set)";
-
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-
-    const isPlaceholder =
-      !supabaseUrl ||
-      supabaseUrl.includes("your-project-id") ||
-      supabaseUrl.includes("example.supabase.co");
-
-    setDebugInfo({
-      configOk: !!supabaseUrl && !!key && !isPlaceholder,
-      supabaseUrl,
-      supabaseHost,
-      isPlaceholder,
-      keyPrefix,
-      keyType,
-      redirectUrl,
-      authEndpoint,
-    });
-  }, []);
 
   // Redirect if already signed in
   useEffect(() => {
@@ -95,15 +54,10 @@ function SignInForm() {
     });
 
     if (error) {
-      const status = "status" in error ? (error as { status?: number }).status ?? null : null;
-      console.error("[auth] signInWithOtp error", {
-        message: error.message,
-        name: error.name,
-        status,
-        redirectTo,
-      });
+      const s = "status" in error ? (error as { status?: number }).status ?? null : null;
+      console.error("[auth] signInWithOtp error", { message: error.message, name: error.name, status: s, redirectTo });
       setErrorDetail(error.message);
-      setErrorStatus(status);
+      setErrorStatus(s);
       setStatus("error");
     } else {
       console.log("[auth] signInWithOtp success — magic link sent");
@@ -111,7 +65,51 @@ function SignInForm() {
     }
   }
 
-  const configOk = debugInfo?.configOk ?? null;
+  async function handleProbe() {
+    setProbing(true);
+    setProbeResult(null);
+    // Derive the normalized origin (strip any path suffix) — same logic as client.ts
+    let origin = RAW_SUPABASE_URL;
+    try { origin = new URL(RAW_SUPABASE_URL).origin; } catch { /* keep raw */ }
+    const healthUrl = `${origin}/auth/v1/health`;
+    console.log("[probe] fetching", healthUrl);
+    try {
+      const res = await fetch(healthUrl);
+      const body = await res.text().catch(() => "(no body)");
+      setProbeResult({ url: healthUrl, ok: res.ok, httpStatus: res.status, body: body.slice(0, 120) });
+    } catch (err) {
+      setProbeResult({ url: healthUrl, ok: false, httpStatus: null, body: String(err) });
+    }
+    setProbing(false);
+  }
+
+  const isPlaceholder =
+    !RAW_SUPABASE_URL ||
+    RAW_SUPABASE_URL.includes("your-project-id") ||
+    RAW_SUPABASE_URL.includes("example.supabase.co");
+
+  const configOk = !!RAW_SUPABASE_URL && !!RAW_SUPABASE_KEY && !isPlaceholder;
+
+  let supabaseHost = "(not set)";
+  let normalizedUrl = RAW_SUPABASE_URL;
+  try {
+    if (RAW_SUPABASE_URL) {
+      const u = new URL(RAW_SUPABASE_URL);
+      supabaseHost = u.host;
+      normalizedUrl = u.origin;
+    }
+  } catch { supabaseHost = "(malformed)"; }
+
+  const keyPrefix = RAW_SUPABASE_KEY ? RAW_SUPABASE_KEY.slice(0, 24) + "…" : "(not set)";
+  const keyType = RAW_SUPABASE_KEY.startsWith("sb_publishable_")
+    ? "sb_publishable_ (new format)"
+    : RAW_SUPABASE_KEY.startsWith("eyJ")
+    ? "eyJ… (legacy JWT anon key)"
+    : RAW_SUPABASE_KEY
+    ? "⚠ unrecognised format"
+    : "(not set)";
+
+  const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : "";
 
   return (
     <div className="max-w-sm mx-auto pt-16">
@@ -121,20 +119,19 @@ function SignInForm() {
         <p className="text-sm text-slate-500">Save your accomplishments and access them anywhere.</p>
       </div>
 
-      {debugInfo?.isPlaceholder && (
+      {isPlaceholder && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 mb-6">
           <p className="font-semibold mb-1">NEXT_PUBLIC_SUPABASE_URL is a placeholder</p>
           <p className="mb-1">
-            The app is using <code className="bg-red-100 px-1 rounded font-mono text-xs break-all">{debugInfo.supabaseUrl || "(empty)"}</code> — this is not a real Supabase project URL.
+            Build baked in: <code className="bg-red-100 px-1 rounded font-mono text-xs break-all">{RAW_SUPABASE_URL || "(empty)"}</code>
           </p>
           <p>
-            In Vercel → Settings → Environment Variables, set{" "}
-            <code className="bg-red-100 px-1 rounded font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> to your
-            real project URL (e.g. <code className="bg-red-100 px-1 rounded font-mono text-xs">https://abcdefgh.supabase.co</code>), then redeploy.
+            Set <code className="bg-red-100 px-1 rounded font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> in
+            Vercel → Environment Variables to your real project URL, then trigger a new deployment.
           </p>
         </div>
       )}
-      {configOk === false && !debugInfo?.isPlaceholder && (
+      {!configOk && !isPlaceholder && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 mb-6">
           <p className="font-semibold mb-1">Configuration error</p>
           <p>
@@ -219,7 +216,7 @@ function SignInForm() {
             )}
             <button
               type="submit"
-              disabled={status === "sending" || !email.trim() || configOk === false}
+              disabled={status === "sending" || !email.trim() || !configOk}
               className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {status === "sending" ? "Sending…" : "Send magic link"}
@@ -233,52 +230,107 @@ function SignInForm() {
       </p>
 
       {/* Full debug panel */}
-      {debugInfo && (
-        <div className="mt-4 bg-slate-100 border border-slate-200 rounded-lg px-3 py-3 text-xs text-slate-600 space-y-1.5">
-          <p className="font-semibold text-slate-700 mb-1">Auth debug</p>
+      <div className="mt-4 bg-slate-100 border border-slate-200 rounded-lg px-3 py-3 text-xs text-slate-600 space-y-1.5">
+        <p className="font-semibold text-slate-700 mb-1">Auth debug</p>
+
+        {/* Build identity — confirms which Vercel deployment is running */}
+        <p>
+          <span className="text-slate-500">Build commit:</span>{" "}
+          <span className="font-mono">{BUILD_COMMIT}</span>
+        </p>
+        <p>
+          <span className="text-slate-500">Deployment URL:</span>{" "}
+          <span className="font-mono break-all">{BUILD_URL}</span>
+        </p>
+
+        <div className="border-t border-slate-200 pt-1.5">
           <p>
             <span className="text-slate-500">Config:</span>{" "}
-            <span style={{ color: debugInfo.configOk ? "#16a34a" : "#dc2626" }}>
-              {debugInfo.configOk ? "✓ OK" : debugInfo.isPlaceholder ? "✗ placeholder URL" : "✗ missing"}
+            <span style={{ color: configOk ? "#16a34a" : "#dc2626" }}>
+              {configOk ? "✓ OK" : isPlaceholder ? "✗ placeholder URL baked in at build" : "✗ missing"}
             </span>
           </p>
-          <p>
-            <span className="text-slate-500">Raw NEXT_PUBLIC_SUPABASE_URL:</span>{" "}
-            <span className={`font-mono break-all ${debugInfo.isPlaceholder ? "text-red-600 font-semibold" : ""}`}>
-              {debugInfo.supabaseUrl || "(not set)"}
-            </span>
-            {debugInfo.isPlaceholder && <span className="text-red-600"> ← PLACEHOLDER, not a real project</span>}
+          {/* Show the EXACT string baked in at build time — no masking */}
+          <p className="mt-1">
+            <span className="text-slate-500">NEXT_PUBLIC_SUPABASE_URL (baked at build):</span>
+          </p>
+          <p className={`font-mono break-all bg-white border rounded px-2 py-1 mt-0.5 ${isPlaceholder ? "border-red-300 text-red-700 font-semibold" : "border-slate-200"}`}>
+            {RAW_SUPABASE_URL || "(empty — not set at build time)"}
+          </p>
+          {isPlaceholder && (
+            <p className="text-red-600 mt-0.5">
+              This is the example placeholder, not a real project. The env var was not set (or was set to the placeholder) when this build ran.
+            </p>
+          )}
+          <p className="mt-1">
+            <span className="text-slate-500">Host extracted:</span>{" "}
+            <span className="font-mono">{supabaseHost}</span>
           </p>
           <p>
-            <span className="text-slate-500">Supabase host (extracted):</span>{" "}
-            <span className="font-mono break-all">{debugInfo.supabaseHost}</span>
+            <span className="text-slate-500">Normalized URL used by client:</span>{" "}
+            <span className="font-mono break-all">{normalizedUrl || "(empty)"}</span>
           </p>
           <p>
             <span className="text-slate-500">Auth endpoint:</span>{" "}
-            <span className="font-mono break-all">{debugInfo.authEndpoint}</span>
+            <span className="font-mono break-all">{normalizedUrl ? `${normalizedUrl}/auth/v1/otp` : "(unknown)"}</span>
           </p>
+        </div>
+
+        <div className="border-t border-slate-200 pt-1.5">
           <p>
             <span className="text-slate-500">Key prefix:</span>{" "}
-            <span className="font-mono">{debugInfo.keyPrefix}</span>
+            <span className="font-mono">{keyPrefix}</span>
           </p>
           <p>
             <span className="text-slate-500">Key type:</span>{" "}
-            <span className="font-mono">{debugInfo.keyType}</span>
+            <span className="font-mono">{keyType}</span>
           </p>
-          <div className="pt-1 border-t border-slate-200">
-            <p className="font-semibold text-slate-700 mb-1">Redirect URL sent to Supabase:</p>
-            <p className="font-mono break-all bg-white border border-slate-200 rounded px-2 py-1">{debugInfo.redirectUrl}</p>
-            <p className="mt-1.5 text-slate-500">
-              ⚠ This exact URL must be in{" "}
-              <strong>Supabase → Auth → URL Configuration → Redirect URLs</strong>.
-              Vercel preview URLs change on every push — add a wildcard instead:
-            </p>
-            <p className="font-mono mt-1 break-all bg-white border border-slate-200 rounded px-2 py-1">
-              https://*-maryecu-mcs-projects.vercel.app/auth/callback
-            </p>
-          </div>
         </div>
-      )}
+
+        {/* Live connectivity probe */}
+        <div className="border-t border-slate-200 pt-1.5">
+          <div className="flex items-center justify-between mb-1">
+            <p className="font-semibold text-slate-700">Live connectivity test</p>
+            <button
+              type="button"
+              onClick={handleProbe}
+              disabled={probing}
+              className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded disabled:opacity-50"
+            >
+              {probing ? "Testing…" : "Test connection"}
+            </button>
+          </div>
+          {probeResult && (
+            <div className={`rounded border px-2 py-1.5 space-y-1 ${probeResult.ok ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+              <p className="font-mono break-all text-slate-700">
+                <span className="text-slate-500">URL fetched:</span> {probeResult.url}
+              </p>
+              <p>
+                <span className="text-slate-500">HTTP status:</span>{" "}
+                <span className={probeResult.ok ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>
+                  {probeResult.httpStatus ?? "network error (status 0)"}
+                </span>
+              </p>
+              <p className="font-mono break-all text-slate-600">
+                <span className="text-slate-500">Response:</span> {probeResult.body}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-slate-200 pt-1.5">
+          <p className="font-semibold text-slate-700 mb-1">Redirect URL sent to Supabase:</p>
+          <p className="font-mono break-all bg-white border border-slate-200 rounded px-2 py-1">{redirectUrl}</p>
+          <p className="mt-1.5 text-slate-500">
+            ⚠ This exact URL must be in{" "}
+            <strong>Supabase → Auth → URL Configuration → Redirect URLs</strong>.
+            Vercel preview URLs change on every push — add a wildcard instead:
+          </p>
+          <p className="font-mono mt-1 break-all bg-white border border-slate-200 rounded px-2 py-1">
+            https://*-maryecu-mcs-projects.vercel.app/auth/callback
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
