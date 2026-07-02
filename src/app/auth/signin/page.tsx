@@ -119,7 +119,11 @@ function SignInForm() {
             {status === "error" && (
               <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700 space-y-1">
                 <p className="font-semibold">Sign-in failed</p>
-                {errorDetail && <p>{errorDetail}</p>}
+                <p>
+                  {errorDetail?.toLowerCase().includes("rate limit")
+                    ? "Too many sign-in emails were requested. Please wait a little while and try again."
+                    : errorDetail || "Something went wrong. Please try again."}
+                </p>
               </div>
             )}
             <button
