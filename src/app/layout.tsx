@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import NavAuth from "@/components/NavAuth";
+import CaptureImpactButton from "@/components/CaptureImpactButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,10 +14,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://impacttracker.maryecurry.com";
+
 export const metadata: Metadata = {
-  title: "Impact Tracker",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Impact Tracker",
+    template: "%s | Impact Tracker",
+  },
   description:
-    "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+    "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands in reviews, updates, and career conversations.",
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Impact Tracker",
+    title: "Impact Tracker",
+    description:
+      "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Impact Tracker",
+    description:
+      "Capture accomplishments, contributions, and business impact. Let AI turn everyday work into language that lands.",
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -42,12 +71,8 @@ export default function RootLayout({
               >
                 My Impact
               </a>
-              <a
-                href="/tracker"
-                className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Capture Impact
-              </a>
+              <CaptureImpactButton />
+              <NavAuth />
             </div>
           </div>
         </nav>
