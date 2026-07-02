@@ -360,12 +360,16 @@ export default function TrackerPage() {
   const [hasDraft, setHasDraft] = useState(false);
   const [draftDismissed, setDraftDismissed] = useState(false);
 
-  // Auth state
+  // Auth state — redirect to sign-in if not authenticated
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
+      const sessionUser = data.session?.user ?? null;
+      setUser(sessionUser);
       setAuthLoading(false);
+      if (!sessionUser) {
+        window.location.href = "/auth/signin";
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
@@ -381,9 +385,9 @@ export default function TrackerPage() {
     if (draft?.rawInput?.trim()) setHasDraft(true);
   }, []);
 
-  // Autosave draft to localStorage
+  // Autosave draft to localStorage (signed-in users only)
   useEffect(() => {
-    if (!rawInput.trim()) return;
+    if (!user || !rawInput.trim()) return;
     saveDraftLS({ rawInput, dateOfImpact, primaryUse, whoBenefited, impactTypes, contributionTypes, estimatedImpact, strategicPriority, kpiMetric, companyValue, projectInitiative, leadershipPriority });
   }, [rawInput, dateOfImpact, primaryUse, whoBenefited, impactTypes, contributionTypes, estimatedImpact, strategicPriority, kpiMetric, companyValue, projectInitiative, leadershipPriority]);
 

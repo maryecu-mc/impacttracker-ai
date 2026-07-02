@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavAuth from "@/components/NavAuth";
+import CaptureImpactButton from "@/components/CaptureImpactButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,12 +71,7 @@ export default function RootLayout({
               >
                 My Impact
               </a>
-              <a
-                href="/tracker"
-                className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Capture Impact
-              </a>
+              <CaptureImpactButton />
               <NavAuth />
             </div>
           </div>

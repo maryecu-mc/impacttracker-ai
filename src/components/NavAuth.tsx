@@ -36,7 +36,7 @@ export default function NavAuth() {
         </span>
         <button
           onClick={handleSignOut}
-          className="text-xs text-slate-400 hover:text-white transition-colors border border-slate-600 rounded-lg px-3 py-1.5"
+          className="text-xs text-slate-700 font-medium hover:text-slate-900 border border-slate-300 hover:border-slate-400 bg-white rounded-lg px-3 py-1.5 transition-colors"
         >
           Sign out
         </button>
@@ -47,7 +47,7 @@ export default function NavAuth() {
   return (
     <a
       href="/auth/signin"
-      className="text-xs text-slate-300 hover:text-white transition-colors border border-slate-600 rounded-lg px-3 py-1.5"
+      className="text-xs text-white font-medium bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5 transition-colors"
     >
       Sign in
     </a>
